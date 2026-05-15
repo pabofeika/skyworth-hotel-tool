@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创维酒店管理系统 - 创建酒店工具</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-dark: #3730a3;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 32px 24px;
+            text-align: center;
+        }
+        .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+        .header p { opacity: 0.85; font-size: 15px; }
+        .container {
+            max-width: 800px;
+            margin: -24px auto 40px;
+            padding: 0 16px;
+            position: relative;
+        }
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        /* 进度日志 */
+        .log-container {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 4px;
+        }
+        .log-entry {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin: 2px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .log-icon {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        .log-step {
+            font-weight: 600;
+            color: var(--primary);
+            min-width: 100px;
+            flex-shrink: 0;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .log-message { flex: 1; }
+        .log-time {
+            flex-shrink: 0;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-family: monospace;
+        }
+        .log-entry.env .log-icon { color: var(--primary); }
+        .log-entry.login .log-icon { color: var(--warning); }
+        .log-entry.create_hotel .log-icon { color: var(--success); }
+        .log-entry.switch_hotel .log-icon { color: var(--primary-light); }
+        .log-entry.copy_template .log-icon { color: #8b5cf6; }
+        .log-entry.welcome_msg .log-icon { color: #ec4899; }
+        .log-entry.pinyin .log-icon { color: #14b8a6; }
+        .log-entry.create_user .log-icon { color: #f97316; }
+        .log-entry.done .log-icon { color: var(--success); }
+        .log-entry.error .log-icon { color: var(--error); }
+        .log-entry.done { background: #f0fdf4; }
+        .log-entry.error { background: #fef2f2; }
+
+        /* 状态指示器 */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .status-dot.idle { background: var(--text-muted); }
+        .status-dot.running { background: var(--primary); animation: pulse 1s infinite; }
+        .status-dot.success { background: var(--success); }
+        .status-dot.error { background: var(--error); }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
+        }
+
+        /* 结果卡片 */
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .result-item {
+            background: #f8fafc;
+            padding: 14px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .result-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .result-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            word-break: break-all;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 12px 0;
+            display: none;
+        }
+        .progress-bar.active { display: block; }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            border-radius: 2px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        @media (max-width: 640px) {
+            .result-grid { grid-template-columns: 1fr; }
+            .log-step { min-width: 80px; }
+            .header h1 { font-size: 22px; }
+            .card { padding: 20px 16px; }
+        }
+
+        /* 历史记录 */
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .history-header .card-title { margin-bottom: 0; }
+        .history-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 13px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-sm:hover { background: #f1f5f9; }
+        .btn-sm.danger { color: var(--error); border-color: #fecaca; }
+        .btn-sm.danger:hover { background: #fef2f2; }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .history-table th {
+            text-align: left;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border-bottom: 2px solid var(--border);
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .history-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .history-table tr:hover td { background: #f8fafc; }
+        .history-table .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-error { background: #fef2f2; color: #991b1b; }
+        .history-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .history-empty .icon { font-size: 40px; margin-bottom: 12px; }
+        .del-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .del-btn:hover { color: var(--error); background: #fef2f2; }
+        .history-table .mono { font-family: monospace; font-size: 13px; }
+.flash-code { cursor: pointer; color: var(--primary); font-weight: 600; transition: all 0.2s; }
+.flash-code:hover { background: #eef2ff; padding: 0 4px; border-radius: 4px; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #1e293b; color: white; padding: 10px 20px; border-radius: 8px;
+  font-size: 14px; z-index: 999; animation: fadeIn 0.3s ease; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🏨 创建酒店工具</h1>
+    <p>自动创建酒店 + 复制模板 + 欢迎词 + 账号</p>
+</div>
+
+<div class="container">
+
+    <!-- 输入表单 -->
+    <div class="card">
+        <div class="card-title">📋 酒店名称</div>
+        <div class="form-group">
+            <label for="hotelName">请输入酒店名称 <span style="color:var(--error)">*</span></label>
+            <input type="text" id="hotelName" placeholder="例如：创维智慧酒店" />
+        </div>
+        <button class="btn btn-primary" id="startBtn" onclick="startWorkflow()">
+            🚀 开始创建酒店
+        </button>
+    </div>
+
+    <!-- 进度 -->
+    <div class="card" id="progressCard" style="display:none;">
+        <div class="card-title">📊 执行进度</div>
+
+        <div class="status-bar" id="statusBar">
+            <span class="status-dot idle" id="statusDot"></span>
+            <span id="statusText">等待开始...</span>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="log-container" id="logContainer"></div>
+    </div>
+
+    <!-- 结果 -->
+    <div class="card" id="resultCard" style="display:none;">
+        <div class="card-title">✅ 创建结果</div>
+        <div class="result-grid" id="resultGrid"></div>
+    </div>
+
+    <!-- 历史记录 -->
+    <div class="card" id="historyCard">
+        <div class="history-header">
+            <div class="card-title">📜 创建记录</div>
+            <div class="history-actions">
+                <button class="btn-sm" onclick="loadHistory()">🔄 刷新</button>
+                <button class="btn-sm danger" onclick="clearAllHistory()">🗑️ 清空</button>
+            </div>
+        </div>
+        <div id="historyContent">
+            <div class="history-empty">
+                <div class="icon">📭</div>
+                <div>暂无创建记录</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+let eventSource = null;
+
+function startWorkflow() {
+    const name = document.getElementById('hotelName').value.trim();
+    if (!name) {
+        alert('请输入酒店名称');
+        document.getElementById('hotelName').focus();
+        return;
+    }
+
+    // 重置 UI
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('startBtn').textContent = '⏳ 执行中...';
+    document.getElementById('progressCard').style.display = 'block';
+    document.getElementById('resultCard').style.display = 'none';
+    document.getElementById('logContainer').innerHTML = '';
+    document.getElementById('progressBar').classList.add('active');
+
+    setStatus('running', '正在执行工作流...');
+
+    // 关闭旧连接
+    if (eventSource) eventSource.close();
+
+    eventSource = new EventSource(`/api/workflow/sse?name=${encodeURIComponent(name)}`);
+
+    // 前台超时检测：60秒无数据则提示
+    let dataTimeout = setTimeout(() => {
+        addLog({ step: 'error', message: '⏱️ 连接超时（60秒无响应），请检查服务器是否可访问目标API或网络连接', timestamp: new Date().toISOString() });
+    }, 60000);
+
+    // 标记工作流是否已结束（防止连接关闭后的 onerror 误报）
+    let workflowEnded = false;
+
+    let stepCount = 0;
+    const totalSteps = 8;
+
+    eventSource.onmessage = function(e) {
+        // 有数据到达，重置前台超时计时器
+        clearTimeout(dataTimeout);
+
+        const data = JSON.parse(e.data);
+
+        if (data.step === 'complete') {
+            workflowEnded = true;
+            clearTimeout(dataTimeout);
+            eventSource.close();
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').textContent = '🚀 开始创建酒店';
+            setStatus('success', '✅ 全部完成！');
+            document.getElementById('progressFill').style.width = '100%';
+            showResult(data);
+            refreshHistoryAfterCreate(); // 刷新历史记录
+            return;
+        }
+
+        if (data.step === 'error' || data.success === false) {
+            workflowEnded = true;
+            clearTimeout(dataTimeout);
+            eventSource.close();
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').textContent = '🔄 重试';
+            const errMsg = data.error || '执行过程中发生错误，请检查后台日志';
+            setStatus('error', `❌ ${errMsg}`);
+            addLog({ step: 'error', message: errMsg, timestamp: new Date().toISOString() });
+            return;
+        }
+
+        // 正常进度
+        addLog(data);
+        stepCount++;
+        const progress = Math.min((stepCount / (totalSteps + 2)) * 100, 95);
+        document.getElementById('progressFill').style.width = `${progress}%`;
+        setStatus('running', data.message || '执行中...');
+
+        // 自动滚动到最新日志
+        const logContainer = document.getElementById('logContainer');
+        logContainer.scrollTop = logContainer.scrollHeight;
+    };
+
+    eventSource.onerror = function(e) {
+        // 如果是正常关闭不处理
+        if (eventSource.readyState === EventSource.CLOSED) {
+            if (workflowEnded) return;
+            setStatus('error', '连接中断，请重试');
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').textContent = '🔄 重试';
+            return;
+        }
+        // CONNECTING 状态：浏览器自动重连中，无需提示
+    };
+}
+
+function addLog(data) {
+    const container = document.getElementById('logContainer');
+    const div = document.createElement('div');
+    div.className = `log-entry ${data.step || ''}`;
+
+    const icons = {
+        env: '⚙️',
+        login: '🔑', 
+        create_hotel: '🏨',
+        switch_hotel: '🔄',
+        copy_template: '📋',
+        welcome_msg: '📝',
+        pinyin: '🔤',
+        create_user: '👤',
+        done: '✅',
+        error: '❌',
+        start: '🚀'
+    };
+
+    const time = new Date(data.timestamp || Date.now());
+    const timeStr = time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    div.innerHTML = `
+        <span class="log-icon">${icons[data.step] || '•'}</span>
+        <span class="log-step">${data.step || ''}</span>
+        <span class="log-message">${escapeHtml(data.message || '')}</span>
+        <span class="log-time">${timeStr}</span>
+    `;
+
+    container.appendChild(div);
+}
+
+function setStatus(type, text) {
+    const dot = document.getElementById('statusDot');
+    dot.className = `status-dot ${type}`;
+    document.getElementById('statusText').textContent = text;
+}
+
+function showResult(data) {
+    const grid = document.getElementById('resultGrid');
+    grid.innerHTML = '';
+
+    const items = [
+        { label: '酒店名称', value: data.hotelName || '-' },
+        { label: '酒店 ID', value: data.hotelId || '-' },
+        { label: '拼音用户名', value: data.pinyinName || '-' },
+        { label: '最终用户名', value: data.finalUsername || '-' },
+        { label: '刷机码', value: data.flashCode || '—' },
+    ];
+
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'result-item';
+        div.innerHTML = `
+            <div class="result-label">${item.label}</div>
+            <div class="result-value">${escapeHtml(String(item.value))}</div>
+        `;
+        grid.appendChild(div);
+    });
+
+    document.getElementById('resultCard').style.display = 'block';
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ==================== 历史记录 ====================
+
+/** 加载历史记录列表 */
+async function loadHistory() {
+    const container = document.getElementById('historyContent');
+    try {
+        const res = await fetch('/api/history');
+        const records = await res.json();
+        
+        if (records.length === 0) {
+            container.innerHTML = `
+                <div class="history-empty">
+                    <div class="icon">📭</div>
+                    <div>暂无创建记录</div>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `<table class="history-table">
+            <thead><tr>
+                <th>时间</th>
+                <th>酒店名称</th>
+                <th>酒店 ID</th>
+                <th>用户名</th>
+                <th>刷机码</th>
+                <th>状态</th>
+                <th></th>
+            </tr></thead><tbody>`;
+
+        records.forEach(r => {
+            const statusBadge = r.status === 'success' 
+                ? '<span class="badge badge-success">成功</span>'
+                : '<span class="badge badge-error">失败</span>';
+            const flashCode = r.flashCode 
+                ? `<span class="mono flash-code" onclick="copyFlashCode('${r.flashCode}')">${escapeHtml(r.flashCode)}</span>`
+                : '<span style="color:var(--text-muted);font-size:12px">—</span>';
+            html += `<tr>
+                <td class="mono">${escapeHtml(r.createdAt || '-')}</td>
+                <td>${escapeHtml(r.hotelName || '-')}</td>
+                <td class="mono">${r.hotelId || '-'}</td>
+                <td class="mono">${escapeHtml(r.finalUsername || '-')}</td>
+                <td>${flashCode}</td>
+                <td>${statusBadge}</td>
+                <td><button class="del-btn" onclick="deleteRecord('${r.id}')" title="删除">✕</button></td>
+            </tr>`;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    } catch (err) {
+        container.innerHTML = `
+            <div class="history-empty">
+                <div class="icon">⚠️</div>
+                <div>加载失败: ${escapeHtml(err.message)}</div>
+            </div>
+        `;
+    }
+}
+
+/** 删除单条记录 */
+async function deleteRecord(id) {
+    if (!confirm('确定删除这条记录？')) return;
+    try {
+        await fetch(`/api/history/${id}`, { method: 'DELETE' });
+        loadHistory();
+    } catch (err) {
+        alert('删除失败: ' + err.message);
+    }
+}
+
+/** 清空全部记录 */
+async function clearAllHistory() {
+    if (!confirm('确定清空所有创建记录？此操作不可恢复。')) return;
+    try {
+        await fetch('/api/history', { method: 'DELETE' });
+        loadHistory();
+    } catch (err) {
+        alert('清空失败: ' + err.message);
+    }
+}
+
+/** 复制刷机码 */
+function copyFlashCode(code) {
+    navigator.clipboard.writeText(code).catch(() => {});
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = '✅ 刷机码已复制';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+}
+
+/** 成功创建后刷新历史记录 */
+function refreshHistoryAfterCreate() {
+    setTimeout(loadHistory, 500);
+}
+
+// 页面加载时自动加载历史记录
+document.addEventListener('DOMContentLoaded', loadHistory);
+</script>
+
+</body>
+</html>

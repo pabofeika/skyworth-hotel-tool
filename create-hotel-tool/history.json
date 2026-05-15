@@ -1,0 +1,102 @@
+[
+  {
+    "id": "mp5jpc2h-ftvv",
+    "hotelName": "LastTest",
+    "hotelId": 620,
+    "pinyinName": "LASTEST",
+    "finalUsername": "LASTEST",
+    "status": "success",
+    "flashCode": "53860777",
+    "createdAt": "2026-05-14 21:49:54"
+  },
+  {
+    "id": "mp5jhvc7-yy89",
+    "hotelName": "UpTest3",
+    "hotelId": 619,
+    "pinyinName": "U",
+    "finalUsername": "U",
+    "status": "success",
+    "flashCode": "14684856",
+    "createdAt": "2026-05-14 21:44:05"
+  },
+  {
+    "id": "mp5jhr9q-evbp",
+    "hotelName": "UpTest2",
+    "hotelId": 618,
+    "pinyinName": "UPTEST",
+    "finalUsername": "UPTEST",
+    "status": "success",
+    "flashCode": "33303796",
+    "createdAt": "2026-05-14 21:44:00"
+  },
+  {
+    "id": "mp5it7qi-0jxw",
+    "hotelName": "FinalTest",
+    "hotelId": 616,
+    "pinyinName": "FINALTEST",
+    "finalUsername": "FINALTEST",
+    "status": "success",
+    "flashCode": "86579737",
+    "createdAt": "2026-05-14 21:24:55"
+  },
+  {
+    "id": "mp5irjjm-ckl3",
+    "hotelName": "完成测试",
+    "hotelId": 613,
+    "pinyinName": "WCTX",
+    "finalUsername": "WCTX",
+    "status": "success",
+    "flashCode": "33110133",
+    "createdAt": "2026-05-14 21:23:37"
+  },
+  {
+    "id": "mp5hvilr-uibm",
+    "hotelName": "全自动测试3",
+    "hotelId": 612,
+    "pinyinName": "QZDC",
+    "finalUsername": "QZDC1",
+    "status": "success",
+    "flashCode": "81714202",
+    "createdAt": "2026-05-14 20:58:43"
+  },
+  {
+    "id": "mp5hveg3-lyi1",
+    "hotelName": "全自动测试2",
+    "hotelId": 611,
+    "pinyinName": "QZDC",
+    "finalUsername": "QZDC",
+    "status": "success",
+    "flashCode": "27206707",
+    "createdAt": "2026-05-14 20:58:37"
+  },
+  {
+    "id": "mp5hva25-8xnk",
+    "hotelName": "全自动测试",
+    "hotelId": 610,
+    "pinyinName": "QZDCSS",
+    "finalUsername": "QZDCSS",
+    "status": "success",
+    "flashCode": "23984920",
+    "createdAt": "2026-05-14 20:58:32"
+  },
+  {
+    "id": "mp5huyip-x3u7",
+    "hotelName": "测试自动化",
+    "hotelId": 609,
+    "pinyinName": "CZDHD",
+    "finalUsername": "CZDHD",
+    "status": "success",
+    "flashCode": "",
+    "createdAt": "2026-05-14 20:58:17"
+  },
+  {
+    "id": "mp59ovkm-2e59",
+    "hotelName": "历史测试",
+    "hotelId": 608,
+    "pinyinName": "LS",
+    "finalUsername": "LS",
+    "status": "success",
+    "createdAt": "2026-05-14 17:09:36",
+    "flashCode": "53888551"
+  }
+]
