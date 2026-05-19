@@ -862,8 +862,11 @@ app.patch('/api/history/:id/flashcode', (req, res) => {
 
 // 启动服务器
 app.listen(CONFIG.port, () => {
+  const envLabel = CONFIG.hotelUrl.includes('42.194.213.245') ? '测试环境' : '生产环境';
   console.log(`\n========================================`);
   console.log(`  创建酒店工具已启动`);
+  console.log(`  环境: ${envLabel}`);
+  console.log(`  酒店系统: ${CONFIG.hotelUrl}`);
   console.log(`  打开浏览器访问:`);
   console.log(`  http://localhost:${CONFIG.port}`);
   console.log(`========================================\n`);
