@@ -747,6 +747,14 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 健康检查（CloudBase 部署用）
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // SSE 端点：实时创建工作流
 app.get('/api/workflow/sse', (req, res) => {
   const hotelName = req.query.name;
