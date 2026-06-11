@@ -537,7 +537,6 @@ function showResult(data) {
         { label: '酒店 ID', value: data.hotelId || '-' },
         { label: '拼音用户名', value: data.pinyinName || '-' },
         { label: '最终用户名', value: data.finalUsername || '-' },
-        { label: '刷机码', value: data.flashCode || '—' },
     ];
 
     items.forEach(item => {
@@ -585,7 +584,6 @@ async function loadHistory() {
                 <th>酒店名称</th>
                 <th>酒店 ID</th>
                 <th>用户名</th>
-                <th>刷机码</th>
                 <th>状态</th>
                 <th></th>
             </tr></thead><tbody>`;
@@ -594,15 +592,11 @@ async function loadHistory() {
             const statusBadge = r.status === 'success' 
                 ? '<span class="badge badge-success">成功</span>'
                 : '<span class="badge badge-error">失败</span>';
-            const flashCode = r.flashCode 
-                ? `<span class="mono flash-code" onclick="copyFlashCode('${r.flashCode}')">${escapeHtml(r.flashCode)}</span>`
-                : '<span style="color:var(--text-muted);font-size:12px">—</span>';
             html += `<tr>
                 <td class="mono">${escapeHtml(r.createdAt || '-')}</td>
                 <td>${escapeHtml(r.hotelName || '-')}</td>
                 <td class="mono">${r.hotelId || '-'}</td>
                 <td class="mono">${escapeHtml(r.finalUsername || '-')}</td>
-                <td>${flashCode}</td>
                 <td>${statusBadge}</td>
                 <td><button class="del-btn" onclick="deleteRecord('${r.id}')" title="删除">✕</button></td>
             </tr>`;

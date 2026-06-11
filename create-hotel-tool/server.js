@@ -287,7 +287,6 @@ function addHistoryRecord(data) {
     pinyinName: data.pinyinName,
     finalUsername: data.finalUsername,
     status: data.status || 'success',
-    flashCode: data.flashCode || '',
     createdAt: getTodayStr(),
   };
   records.unshift(record); // 最新记录在最前面
@@ -305,7 +304,6 @@ class HotelWorkflowExecutor {
     this.pinyinName = '';    // 拼音首字母用户名
     this.finalUsername = ''; // 最终创建成功的用户名
     this.eventEmitter = new EventEmitter();
-    this.flashCode = ''; // 刷机码
   }
 
   /** 注册进度监听 */
@@ -348,23 +346,15 @@ class HotelWorkflowExecutor {
       // Step 8: 创建用户（失败则重命名重试）
       await this.stepCreateUser();
 
-      // Step 9: 登录刷机平台并创建门店+配置
-      try {
-        await this.stepHuashi(this.pinyinName, hotelName);
-      } catch (err) {
-        this._progress('huashi', `⚠️ 刷机码步骤失败（可后续手动配置）: ${err.message}`);
-      }
-
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       this._progress('done', `✅ 全部完成！耗时 ${elapsed} 秒`, {
         hotelName,
         hotelId: this.hotelId,
         pinyinName: this.pinyinName,
         finalUsername: this.finalUsername,
-        flashCode: this.flashCode
       });
 
-      return { success: true, hotelName, hotelId: this.hotelId, pinyinName: this.pinyinName, finalUsername: this.finalUsername, flashCode: this.flashCode };
+      return { success: true, hotelName, hotelId: this.hotelId, pinyinName: this.pinyinName, finalUsername: this.finalUsername };
     } catch (err) {
       this._progress('error', `❌ 失败: ${err.message}`);
       return { success: false, error: err.message };
@@ -720,24 +710,6 @@ class HotelWorkflowExecutor {
   }
 
   /** Step 9: 刷机平台——创建门店+预设配置+生成刷机码 */
-  async stepHuashi(pinyinName, hotelName) {
-    this._progress('huashi', '正在登录刷机平台...');
-    await ensureHuashiToken();
-    this._progress('huashi', '刷机平台登录成功');
-
-    try {
-      this._progress('huashi', `正在创建门店: ${hotelName}`);
-      await huashiCreateShop(hotelName);
-      this._progress('huashi', '门店创建成功');
-    } catch (err) {
-      // 门店可能已存在，继续
-      this._progress('huashi', `门店创建（可能已存在）: ${err.message}`);
-    }
-
-    this._progress('huashi', '正在创建预设配置并生成刷机码...');
-    this.flashCode = await huashiCreateConfig(hotelName, pinyinName);
-    this._progress('huashi', `✅ 刷机码: ${this.flashCode}`);
-    this._progress('huashi', `✅ 预制文件已上传`);
   }
 }
 
@@ -852,20 +824,6 @@ app.delete('/api/history/:id', (req, res) => {
 app.delete('/api/history', (req, res) => {
   writeHistory([]);
   res.json({ success: true });
-});
-
-/** 更新刷机码 */
-app.patch('/api/history/:id/flashcode', (req, res) => {
-  const { flashCode } = req.body;
-  if (!flashCode) return res.status(400).json({ error: '缺少刷机码' });
-  
-  const records = readHistory();
-  const record = records.find(r => r.id === req.params.id);
-  if (!record) return res.status(404).json({ error: '记录未找到' });
-  
-  record.flashCode = flashCode;
-  writeHistory(records);
-  res.json({ success: true, record });
 });
 
 // 启动服务器
