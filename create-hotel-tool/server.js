@@ -708,9 +708,6 @@ class HotelWorkflowExecutor {
 
     throw new Error(`创建用户失败: 尝试 ${maxRetries} 次后仍未成功`);
   }
-
-  /** Step 9: 刷机平台——创建门店+预设配置+生成刷机码 */
-  }
 }
 
 // ==================== Express 服务器 ====================
