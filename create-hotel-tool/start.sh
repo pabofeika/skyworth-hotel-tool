@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# 创建酒店工具 - 启动器（测试环境）
+# 创建酒店工具 - 启动器（正式环境）
 # 双击此文件即可启动服务并自动打开浏览器
 # ============================================================
 
@@ -15,10 +15,10 @@ fi
 cd "$PROJECT_DIR" || { echo "❌ 找不到项目目录"; exit 1; }
 
 echo "============================================"
-echo "  创建酒店工具  v1.0（测试环境）"
+echo "  创建酒店工具  v1.0（正式环境）"
 echo "============================================"
 echo ""
-echo "📌 正在启动服务（测试环境: http://42.194.213.245/hotel, FID=1）..."
+echo "📌 正在启动服务（正式环境: https://cooshare.coocaa.com/hotel, FID=404）..."
 
 # 检查端口 3000
 if lsof -ti:3000 &>/dev/null; then
@@ -30,9 +30,9 @@ fi
 # 自动打开浏览器
 (sleep 2 && open "http://localhost:3000") &
 
-# 启动服务器（测试环境: FID=1）
-HOTEL_URL=http://42.194.213.245/hotel \
-FID=1 \
+# 启动服务器（正式环境: FID=404）
+HOTEL_URL=https://cooshare.coocaa.com/hotel \
+FID=404 \
 DEEPSEEK_API_KEY=[REDACTED_API_KEY] \
 DEEPSEEK_API_URL=http://[REDACTED_HOST]/v1/chat/completions \
 node server.js
