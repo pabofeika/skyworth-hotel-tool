@@ -23,7 +23,7 @@
             "HUASHI_USERNAME": "[REDACTED_USERNAME]",
             "HUASHI_PASSWORD": "[REDACTED_USERNAME]",
             "DEEPSEEK_API_KEY": "[REDACTED_API_KEY]",
-            "DEEPSEEK_API_URL": "http://[REDACTED_HOST]/v1/chat/completions",
+            "DEEPSEEK_API_URL": "http://[REDACTED_HOST]",
             "DEEPSEEK_MODEL": "deepseek-v4-flash",
             "REQUEST_TIMEOUT": "30000"
           }
