@@ -11,8 +11,8 @@
     { "src": "/(.*)", "dest": "/server.js" }
   ],
   "env": {
-    "HOTEL_URL": "http://42.194.213.245/hotel",
-    "FID": "1",
+    "HOTEL_URL": "https://cooshare.coocaa.com/hotel",
+    "FID": "404",
     "LOGIN_USERNAME": "n8n",
     "LOGIN_PASSWORD": "[REDACTED_PASSWORD_HASH]",
     "SOURCE_HOTEL_ID": "214",
