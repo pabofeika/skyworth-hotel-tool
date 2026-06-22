@@ -18,7 +18,7 @@ echo "============================================"
 echo "  创建酒店工具  v1.0（测试环境）"
 echo "============================================"
 echo ""
-echo "📌 正在启动服务（测试环境: http://42.194.213.245/hotel）..."
+echo "📌 正在启动服务（测试环境: http://42.194.213.245/hotel, FID=1）..."
 
 # 检查端口 3000
 if lsof -ti:3000 &>/dev/null; then
@@ -30,9 +30,11 @@ fi
 # 自动打开浏览器
 (sleep 2 && open "http://localhost:3000") &
 
-# 启动服务器（测试环境）
+# 启动服务器（测试环境: FID=1）
 HOTEL_URL=http://42.194.213.245/hotel \
+FID=1 \
 DEEPSEEK_API_KEY=[REDACTED_API_KEY] \
+DEEPSEEK_API_URL=http://[REDACTED_HOST]/v1/chat/completions \
 node server.js
 
 echo ""

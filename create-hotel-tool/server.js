@@ -22,7 +22,8 @@ const CONFIG = {
 
   // DeepSeek
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
-  deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+  deepseekApiUrl: process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/chat/completions',
+  deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash',
 
   // 用户密码哈希（MD5("123")）
   userPasswordHash: '[REDACTED_PASSWORD_HASH]',
@@ -579,7 +580,7 @@ class HotelWorkflowExecutor {
     try {
       const http = createHttpClient();
       const res = await http.post(
-        'https://api.deepseek.com/chat/completions',
+        this.config.deepseekApiUrl,
         {
           model: this.config.deepseekModel,
           messages: [
