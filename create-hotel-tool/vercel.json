@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/server.js" },
+    { "src": "/(.*)", "dest": "/server.js" }
+  ],
+  "env": {
+    "HOTEL_URL": "http://42.194.213.245/hotel",
+    "FID": "1",
+    "LOGIN_USERNAME": "n8n",
+    "LOGIN_PASSWORD": "[REDACTED_PASSWORD_HASH]",
+    "SOURCE_HOTEL_ID": "214",
+    "HUASHI_USERNAME": "[REDACTED_USERNAME]",
+    "HUASHI_PASSWORD": "[REDACTED_USERNAME]",
+    "DEEPSEEK_API_KEY": "[REDACTED_API_KEY]",
+    "DEEPSEEK_MODEL": "deepseek-chat",
+    "REQUEST_TIMEOUT": "30000"
+  }
+}

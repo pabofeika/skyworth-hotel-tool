@@ -272,8 +272,9 @@ function readHistory() {
   return [];
 }
 
-/** 写入历史记录 */
+/** 写入历史记录（Vercel serverless 环境不写入文件系统）*/
 function writeHistory(records) {
+  if (process.env.VERCEL) return; // Vercel 文件系统只读，跳过
   fs.writeFileSync(HISTORY_FILE, JSON.stringify(records, null, 2), 'utf-8');
 }
 
@@ -823,14 +824,20 @@ app.delete('/api/history', (req, res) => {
   res.json({ success: true });
 });
 
-// 启动服务器
-app.listen(CONFIG.port, () => {
-  const envLabel = CONFIG.hotelUrl.includes('42.194.213.245') ? '测试环境' : '生产环境';
-  console.log(`\n========================================`);
-  console.log(`  创建酒店工具已启动`);
-  console.log(`  环境: ${envLabel}`);
-  console.log(`  酒店系统: ${CONFIG.hotelUrl}`);
-  console.log(`  打开浏览器访问:`);
-  console.log(`  http://localhost:${CONFIG.port}`);
-  console.log(`========================================\n`);
-});
+// ===== Vercel Serverless 导出 =====
+// Vercel 使用 serverless 函数，不走 app.listen
+// 本地开发才启动 HTTP 服务
+module.exports = app;
+
+if (require.main === module || !process.env.VERCEL) {
+  app.listen(CONFIG.port, () => {
+    const envLabel = CONFIG.hotelUrl.includes('42.194.213.245') ? '测试环境' : '生产环境';
+    console.log(`\n========================================`);
+    console.log(`  创建酒店工具已启动`);
+    console.log(`  环境: ${envLabel}`);
+    console.log(`  酒店系统: ${CONFIG.hotelUrl}`);
+    console.log(`  打开浏览器访问:`);
+    console.log(`  http://localhost:${CONFIG.port}`);
+    console.log(`========================================\n`);
+  });
+}
