@@ -14,18 +14,18 @@
           "startCommand": "node server.js",
           "installCommand": "npm install",
           "envVariables": {
-            "HOTEL_URL": "https://cooshare.coocaa.com/hotel",
-            "FID": "404",
-            "LOGIN_USERNAME": "n8n",
-            "LOGIN_PASSWORD": "[REDACTED_PASSWORD_HASH]",
-            "SOURCE_HOTEL_ID": "214",
-            "HUASHI_URL": "https://skyworth-business.com/huashi-api",
-            "HUASHI_USERNAME": "[REDACTED_USERNAME]",
-            "HUASHI_PASSWORD": "[REDACTED_USERNAME]",
-            "DEEPSEEK_API_KEY": "[REDACTED_API_KEY]",
-            "DEEPSEEK_API_URL": "http://[REDACTED_HOST]",
-            "DEEPSEEK_MODEL": "deepseek-v4-flash",
-            "REQUEST_TIMEOUT": "30000"
+            "HOTEL_URL": "{{HOTEL_URL}}",
+            "FID": "{{FID}}",
+            "LOGIN_USERNAME": "{{LOGIN_USERNAME}}",
+            "LOGIN_PASSWORD": "{{LOGIN_PASSWORD}}",
+            "SOURCE_HOTEL_ID": "{{SOURCE_HOTEL_ID}}",
+            "HUASHI_URL": "{{HUASHI_URL}}",
+            "HUASHI_USERNAME": "{{HUASHI_USERNAME}}",
+            "HUASHI_PASSWORD": "{{HUASHI_PASSWORD}}",
+            "DEEPSEEK_API_KEY": "{{DEEPSEEK_API_KEY}}",
+            "DEEPSEEK_API_URL": "{{DEEPSEEK_API_URL}}",
+            "DEEPSEEK_MODEL": "{{DEEPSEEK_MODEL}}",
+            "REQUEST_TIMEOUT": "{{REQUEST_TIMEOUT}}"
           }
         }
       }

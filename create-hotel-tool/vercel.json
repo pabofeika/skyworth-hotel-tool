@@ -11,16 +11,17 @@
     { "src": "/(.*)", "dest": "/server.js" }
   ],
   "env": {
-    "HOTEL_URL": "https://cooshare.coocaa.com/hotel",
-    "FID": "404",
-    "LOGIN_USERNAME": "n8n",
-    "LOGIN_PASSWORD": "[REDACTED_PASSWORD_HASH]",
-    "SOURCE_HOTEL_ID": "214",
-    "HUASHI_USERNAME": "[REDACTED_USERNAME]",
-    "HUASHI_PASSWORD": "[REDACTED_USERNAME]",
-    "DEEPSEEK_API_KEY": "[REDACTED_API_KEY]",
-    "DEEPSEEK_API_URL": "http://[REDACTED_HOST]/v1/chat/completions",
-    "DEEPSEEK_MODEL": "deepseek-v4-flash",
-    "REQUEST_TIMEOUT": "30000"
+    "HOTEL_URL": "@hotel-url",
+    "FID": "@fid",
+    "LOGIN_USERNAME": "@login-username",
+    "LOGIN_PASSWORD": "@login-password",
+    "SOURCE_HOTEL_ID": "@source-hotel-id",
+    "HUASHI_URL": "@huashi-url",
+    "HUASHI_USERNAME": "@huashi-username",
+    "HUASHI_PASSWORD": "@huashi-password",
+    "DEEPSEEK_API_KEY": "@deepseek-api-key",
+    "DEEPSEEK_API_URL": "@deepseek-api-url",
+    "DEEPSEEK_MODEL": "@deepseek-model",
+    "REQUEST_TIMEOUT": "@request-timeout"
   }
 }

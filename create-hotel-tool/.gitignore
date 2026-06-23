@@ -1,2 +1,30 @@
+# 依赖
 node_modules/
+
+# 环境变量（包含敏感信息）
 .env
+
+# 历史记录（运行时数据）
+history.json
+
+# 部署配置（如含敏感信息请勿提交，使用模板文件替代）
+cloudbaserc.json
+vercel.json
+
+# 启动脚本（如含硬编码密钥请勿提交）
+# start.sh
+# start-prod.sh
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 日志
+*.log
+npm-debug.log*

@@ -17,16 +17,16 @@ const CONFIG = {
   hotelUrl: process.env.HOTEL_URL || 'https://cooshare.coocaa.com/hotel',
   fid: parseInt(process.env.FID || '404'),
   loginUsername: process.env.LOGIN_USERNAME || 'n8n',
-  loginPassword: process.env.LOGIN_PASSWORD || '[REDACTED_PASSWORD_HASH]',
+  loginPassword: process.env.LOGIN_PASSWORD || '',
   sourceHotelId: parseInt(process.env.SOURCE_HOTEL_ID || '214'),
 
   // DeepSeek
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
   deepseekApiUrl: process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/chat/completions',
-  deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash',
+  deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
 
-  // 用户密码哈希（MD5("123")）
-  userPasswordHash: '[REDACTED_PASSWORD_HASH]',
+  // 用户密码哈希
+  userPasswordHash: process.env.USER_PASSWORD_HASH || '[REDACTED_PASSWORD_HASH]',
 
   port: parseInt(process.env.PORT || '3000'),
 
@@ -34,9 +34,14 @@ const CONFIG = {
   requestTimeout: parseInt(process.env.REQUEST_TIMEOUT || '30000'),
 
   // 刷机平台
-  huashiUrl: process.env.HUASHI_URL || 'https://skyworth-business.com/huashi-api',
-  huashiUsername: process.env.HUASHI_USERNAME || '[REDACTED_USERNAME]',
-  huashiPassword: process.env.HUASHI_PASSWORD || '[REDACTED_USERNAME]',
+  huashiUrl: process.env.HUASHI_URL || '',
+  huashiUsername: process.env.HUASHI_USERNAME || '',
+  huashiPassword: process.env.HUASHI_PASSWORD || '',
+
+  // 输入验证
+  maxHotelNameLength: parseInt(process.env.MAX_HOTEL_NAME_LENGTH || '100'),
+  rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'),
+  rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '10'),
 };
 
 // ==================== 刷机平台 API ====================
@@ -46,9 +51,11 @@ let _huashiTokenExpire = 0;
 
 /** 登录刷机平台，获取 token */
 async function huashiLogin() {
+  if (!CONFIG.huashiUrl) {
+    throw new Error('刷机平台 URL 未配置');
+  }
   const http = createHttpClient();
   const url = `${CONFIG.huashiUrl}/admin/login`;
-  // 使用固定 uuid, captcha
   const body = {
     username: CONFIG.huashiUsername,
     password: CONFIG.huashiPassword,
@@ -150,8 +157,13 @@ async function huashiUploadFile(fileContent, fileName, token) {
   throw new Error(`文件分片上传complete失败: ${JSON.stringify(completeRes.data)}`);
 }
 
-/** 创建预设配置（含刷机码生成）*/
+/** 创建预设配置（含刷机码生成），返回 { configId, flashCode } */
 async function huashiCreateConfig(hotelName, pinyinName) {
+  if (!CONFIG.huashiUrl) {
+    console.log('[huashi] 刷机平台未配置，跳过预设配置创建');
+    return null;
+  }
+
   const token = await ensureHuashiToken();
   const http = createHttpClient();
 
@@ -171,14 +183,9 @@ async function huashiCreateConfig(hotelName, pinyinName) {
 
   const loginContent = `IP=193.112.221.196:80/hotel\nROOM_NUM=\nUN=${pinyinName}\nPWD=123`;
 
-  // 上传 login.txt 并获取 fileKey
-  let fileKey = '';
-  try {
-    fileKey = await huashiUploadFile(loginContent, 'login.txt', token);
-    console.log(`[huashi] login.txt 上传成功, fileKey: ${fileKey}`);
-  } catch (err) {
-    console.error(`[huashi] 文件上传失败: ${err.message}`);
-  }
+  // 上传 login.txt 并获取 fileKey — 失败则抛出异常
+  const fileKey = await huashiUploadFile(loginContent, 'login.txt', token);
+  console.log(`[huashi] login.txt 上传成功, fileKey: ${fileKey}`);
 
   const body = {
     activeNumber: null,
@@ -191,12 +198,12 @@ async function huashiCreateConfig(hotelName, pinyinName) {
     updateDate: today,
     outageStartupStatus: '0',
     projectEndDate: endDateStr,
-    preFiles: fileKey ? `/system/coocaa_hotel/login.txt` : '',
-    preFileList: fileKey ? [{
+    preFiles: `/system/coocaa_hotel/login.txt`,
+    preFileList: [{
       fileKey: fileKey,
       fileName: 'login.txt',
       filePath: '/system/coocaa_hotel/login.txt'
-    }] : [],
+    }],
     configInfo: loginContent,
     commentary: `酒店创建: ${hotelName} (${pinyinName})`,
   };
@@ -205,7 +212,7 @@ async function huashiCreateConfig(hotelName, pinyinName) {
     headers: { 'Content-Type': 'application/json', token },
   });
   if (res.data && res.data.code === 0 && res.data.data) {
-    return res.data.data; // 刷机码
+    return res.data.data; // 返回配置数据（包含刷机码）
   }
   throw new Error(`创建预设配置失败: ${JSON.stringify(res.data)}`);
 }
@@ -224,7 +231,7 @@ function getTodayStr() {
  * abc → abc1,  abc1 → abc2,  abc009 → abc010
  */
 function incrementName(str) {
-  const match = str.match(/^([a-zA-Z]*)(\d*)$/);
+  const match = str.match(/^([a-zA-Z]+)(\d*)$/);
   if (!match) return str + '1';
   const [, letterPart, numPart] = match;
   if (numPart === '') {
@@ -257,6 +264,28 @@ function getHostDisplay(url) {
   try { return new URL(url).hostname; } catch { return url; }
 }
 
+/**
+ * 验证酒店名称合法性
+ * 返回 { valid: boolean, error?: string }
+ */
+function validateHotelName(name) {
+  if (!name || typeof name !== 'string') {
+    return { valid: false, error: '酒店名称不能为空' };
+  }
+  const trimmed = name.trim();
+  if (trimmed.length === 0) {
+    return { valid: false, error: '酒店名称不能为空' };
+  }
+  if (trimmed.length > CONFIG.maxHotelNameLength) {
+    return { valid: false, error: `酒店名称不能超过 ${CONFIG.maxHotelNameLength} 个字符` };
+  }
+  // 只允许中文、英文、数字、空格和常用符号
+  if (!/^[\u4e00-\u9fff\w\s\-·.()（）]+$/.test(trimmed)) {
+    return { valid: false, error: '酒店名称包含无效字符，仅支持中文、英文、数字和常用符号' };
+  }
+  return { valid: true, sanitized: trimmed };
+}
+
 // ==================== 历史记录 ====================
 
 const HISTORY_FILE = path.join(__dirname, 'history.json');
@@ -273,10 +302,14 @@ function readHistory() {
   return [];
 }
 
-/** 写入历史记录（Vercel serverless 环境不写入文件系统）*/
+/** 写入历史记录（Vercel/CloudBase serverless 环境不写入文件系统）*/
 function writeHistory(records) {
-  if (process.env.VERCEL) return; // Vercel 文件系统只读，跳过
-  fs.writeFileSync(HISTORY_FILE, JSON.stringify(records, null, 2), 'utf-8');
+  if (process.env.VERCEL || process.env.TCB_ENV) return;
+  try {
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(records, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('写入历史记录失败:', err.message);
+  }
 }
 
 /** 添加一条历史记录 */
@@ -288,10 +321,15 @@ function addHistoryRecord(data) {
     hotelId: data.hotelId,
     pinyinName: data.pinyinName,
     finalUsername: data.finalUsername,
+    flashCode: data.flashCode || '',
     status: data.status || 'success',
     createdAt: getTodayStr(),
   };
   records.unshift(record); // 最新记录在最前面
+  // 最多保留 200 条记录
+  if (records.length > 200) {
+    records.splice(200);
+  }
   writeHistory(records);
   return record;
 }
@@ -305,6 +343,7 @@ class HotelWorkflowExecutor {
     this.hotelId = null;     // 新建的酒店ID
     this.pinyinName = '';    // 拼音首字母用户名
     this.finalUsername = ''; // 最终创建成功的用户名
+    this.flashCode = '';     // 刷机码
     this.eventEmitter = new EventEmitter();
   }
 
@@ -320,6 +359,14 @@ class HotelWorkflowExecutor {
 
   /** 执行完整工作流 */
   async run(hotelName) {
+    // 输入校验
+    const validation = validateHotelName(hotelName);
+    if (!validation.valid) {
+      this._progress('error', `❌ 输入校验失败: ${validation.error}`);
+      return { success: false, error: validation.error };
+    }
+    hotelName = validation.sanitized;
+
     const startTime = Date.now();
     this._progress('start', `开始创建酒店: ${hotelName}`);
 
@@ -348,15 +395,26 @@ class HotelWorkflowExecutor {
       // Step 8: 创建用户（失败则重命名重试）
       await this.stepCreateUser();
 
+      // Step 9: 创建刷机平台预设配置（可选，不影响主流程）
+      await this.stepHuashiConfig(hotelName);
+
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       this._progress('done', `✅ 全部完成！耗时 ${elapsed} 秒`, {
         hotelName,
         hotelId: this.hotelId,
         pinyinName: this.pinyinName,
         finalUsername: this.finalUsername,
+        flashCode: this.flashCode,
       });
 
-      return { success: true, hotelName, hotelId: this.hotelId, pinyinName: this.pinyinName, finalUsername: this.finalUsername };
+      return {
+        success: true,
+        hotelName,
+        hotelId: this.hotelId,
+        pinyinName: this.pinyinName,
+        finalUsername: this.finalUsername,
+        flashCode: this.flashCode,
+      };
     } catch (err) {
       this._progress('error', `❌ 失败: ${err.message}`);
       return { success: false, error: err.message };
@@ -570,9 +628,9 @@ class HotelWorkflowExecutor {
 
     const apiKey = this.config.deepseekApiKey;
     if (!apiKey) {
-      // 如果没有配置DeepSeek API key，使用内置的简单拼音转写
-      this._progress('pinyin', '⚠️ 未配置DeepSeek API Key，使用内置简易拼音转换');
-      this.pinyinName = this.simplePinyinConvert(hotelName);
+      // 如果没有配置DeepSeek API key，使用内置的拼音转写
+      this._progress('pinyin', '⚠️ 未配置DeepSeek API Key，使用内置拼音转换');
+      this.pinyinName = this.localPinyinConvert(hotelName);
       this._progress('pinyin', `拼音首字母: ${this.pinyinName}`);
       return;
     }
@@ -608,24 +666,13 @@ class HotelWorkflowExecutor {
       }
     } catch (err) {
       this._progress('pinyin', `⚠️ DeepSeek API 调用失败: ${err.message}，使用本地转换`);
-      this.pinyinName = this.simplePinyinConvert(hotelName);
+      this.pinyinName = this.localPinyinConvert(hotelName);
       this._progress('pinyin', `拼音首字母（本地）: ${this.pinyinName}`);
     }
   }
 
-  /** 本地简易拼音转换（仅限常见汉字，备选方案） */
-  simplePinyinConvert(chinese) {
-    // 常见汉字拼音首字母映射表（仅覆盖常用字）
-    const pinyinMap = {
-      '创': 'C', '维': 'W', '酒': 'J', '店': 'D', '科': 'K', '技': 'J',
-      '有': 'Y', '限': 'X', '公': 'G', '司': 'S', '饭': 'F', '大': 'D',
-      '堂': 'T', '客': 'K', '房': 'F', '会': 'H', '议': 'Y', '中': 'Z',
-      '心': 'X', '南': 'N', '北': 'B', '京': 'J', '上': 'S', '海': 'H',
-      '广': 'G', '州': 'Z', '深': 'S', '圳': 'Z', '天': 'T', '地': 'D',
-      '万': 'W', '国': 'G',
-      // 更多常用字...
-    };
-
+  /** 本地拼音转换（覆盖常用汉字，备选方案） */
+  localPinyinConvert(chinese) {
     let result = '';
     for (const char of chinese) {
       // 跳过空格、标点
@@ -638,7 +685,7 @@ class HotelWorkflowExecutor {
       // 数字跳过
       if (/[0-9]/.test(char)) continue;
       // 查拼音映射表
-      result += pinyinMap[char] || '';
+      result += PINYIN_MAP[char] || '';
     }
     return result || 'HTL'; // 如果全部无法识别，返回默认值
   }
@@ -710,28 +757,179 @@ class HotelWorkflowExecutor {
 
     throw new Error(`创建用户失败: 尝试 ${maxRetries} 次后仍未成功`);
   }
+
+  /** Step 9: 创建刷机平台预设配置 */
+  async stepHuashiConfig(hotelName) {
+    if (!CONFIG.huashiUrl) {
+      this._progress('huashi_config', '刷机平台未配置，跳过预设配置创建');
+      return;
+    }
+    this._progress('huashi_config', '正在创建刷机平台预设配置...');
+    try {
+      const result = await huashiCreateConfig(hotelName, this.pinyinName);
+      // 尝试提取刷机码
+      if (result) {
+        this.flashCode = result.activeNumber || result.flashCode || '';
+        this._progress('huashi_config', `✅ 预设配置创建成功，刷机码: ${this.flashCode || '无'}`);
+      }
+    } catch (err) {
+      // 刷机平台失败不阻塞主流程
+      this._progress('huashi_config', `⚠️ 预设配置创建失败: ${err.message}`);
+    }
+  }
 }
+
+// ==================== 拼音映射表 ====================
+// 覆盖常用汉字 → 拼音首字母，本地备用方案
+const PINYIN_MAP = {
+  '啊':'A','阿':'A','爱':'A','安':'A','暗':'A','奥':'A',
+  '八':'B','把':'B','白':'B','百':'B','半':'B','办':'B','包':'B','保':'B','报':'B',
+  '北':'B','被':'B','本':'B','比':'B','必':'B','边':'B','变':'B','标':'B','别':'B',
+  '宾':'B','冰':'B','波':'B','博':'B','不':'B','部':'B',
+  '才':'C','财':'C','餐':'C','藏':'C','草':'C','测':'C','层':'C','查':'C','产':'C',
+  '长':'C','场':'C','超':'C','车':'C','成':'C','城':'C','吃':'C','出':'C','初':'C',
+  '处':'C','传':'C','窗':'C','创':'C','春':'C','此':'C','次':'C','从':'C','村':'C',
+  '大':'D','代':'D','单':'D','但':'D','当':'D','导':'D','到':'D','道':'D','得':'D',
+  '灯':'D','等':'D','地':'D','第':'D','点':'D','电':'D','店':'D','定':'D','东':'D',
+  '动':'D','都':'D','读':'D','度':'D','对':'D','多':'D',
+  '儿':'E','二':'E',
+  '发':'F','法':'F','饭':'F','方':'F','房':'F','放':'F','飞':'F','分':'F','风':'F',
+  '服':'F','福':'F','府':'F','富':'F','副':'F',
+  '该':'G','改':'G','干':'G','感':'G','刚':'G','高':'G','告':'G','格':'G','个':'G',
+  '各':'G','给':'G','根':'G','更':'G','工':'G','公':'G','功':'G','共':'G','关':'G',
+  '观':'G','管':'G','光':'G','广':'G','规':'G','国':'G','果':'G','过':'G',
+  '还':'H','海':'H','好':'H','号':'H','合':'H','和':'H','河':'H','很':'H','红':'H',
+  '后':'H','花':'H','华':'H','化':'H','画':'H','话':'H','欢':'H','环':'H','换':'H',
+  '黄':'H','回':'H','会':'H','活':'H','火':'H','或':'H',
+  '机':'J','基':'J','及':'J','级':'J','即':'J','集':'J','几':'J','计':'J','记':'J',
+  '技':'J','际':'J','济':'J','加':'J','家':'J','间':'J','检':'J','建':'J','健':'J',
+  '将':'J','江':'J','讲':'J','交':'J','教':'J','接':'J','街':'J','节':'J','结':'J',
+  '解':'J','介':'J','界':'J','今':'J','金':'J','进':'J','近':'J','京':'J','经':'J',
+  '精':'J','景':'J','九':'J','久':'J','酒':'J','就':'J','居':'J','局':'J','举':'J',
+  '具':'J','据':'J','决':'J','军':'J',
+  '开':'K','看':'K','康':'K','科':'K','可':'K','客':'K','课':'K','空':'K','控':'K',
+  '口':'K','快':'K',
+  '来':'L','蓝':'L','老':'L','乐':'L','了':'L','类':'L','里':'L','理':'L','力':'L',
+  '立':'L','利':'L','例':'L','连':'L','联':'L','练':'L','量':'L','料':'L','林':'L',
+  '零':'L','领':'L','流':'L','六':'L','龙':'L','楼':'L','路':'L','旅':'L','绿':'L',
+  '论':'L',
+  '马':'M','买':'M','满':'M','毛':'M','贸':'M','没':'M','美':'M','门':'M','们':'M',
+  '米':'M','面':'M','民':'M','名':'M','明':'M','命':'M','模':'M','目':'M',
+  '那':'N','南':'N','难':'N','内':'N','能':'N','你':'N','年':'N','牛':'N','农':'N',
+  '女':'N',
+  '欧':'O',
+  '拍':'P','排':'P','盘':'P','旁':'P','跑':'P','配':'P','批':'P','片':'P','品':'P',
+  '平':'P','评':'P','破':'P',
+  '七':'Q','期':'Q','其':'Q','奇':'Q','企':'Q','起':'Q','气':'Q','汽':'Q','前':'Q',
+  '钱':'Q','强':'Q','切':'Q','且':'Q','亲':'Q','青':'Q','清':'Q','情':'Q','请':'Q',
+  '庆':'Q','求':'Q','区':'Q','去':'Q','全':'Q','确':'Q','群':'Q',
+  '然':'R','让':'R','热':'R','人':'R','认':'R','任':'R','日':'R','容':'R','如':'R',
+  '入':'R',
+  '三':'S','色':'S','沙':'S','山':'S','商':'S','上':'S','少':'S','设':'S','社':'S',
+  '身':'S','深':'S','神':'S','生':'S','声':'S','省':'S','十':'S','时':'S','实':'S',
+  '食':'S','使':'S','始':'S','世':'S','市':'S','示':'S','事':'S','是':'S','收':'S',
+  '手':'S','首':'S','书':'S','数':'S','水':'S','说':'S','司':'S','四':'S','苏':'S',
+  '速':'S','宿':'S','算':'S','所':'S',
+  '他':'T','它':'T','台':'T','太':'T','堂':'T','特':'T','提':'T','题':'T','体':'T',
+  '天':'T','条':'T','铁':'T','通':'T','同':'T','头':'T','图':'T','团':'T',
+  '外':'W','完':'W','万':'W','王':'W','网':'W','往':'W','为':'W','维':'W','位':'W',
+  '文':'W','问':'W','我':'W','无':'W','五':'W','物':'W',
+  '西':'X','希':'X','习':'X','系':'X','下':'X','先':'X','现':'X','线':'X','限':'X',
+  '乡':'X','相':'X','香':'X','想':'X','向':'X','象':'X','小':'X','校':'X','新':'X',
+  '心':'X','信':'X','星':'X','行':'X','形':'X','性':'X','修':'X','需':'X','许':'X',
+  '学':'X','讯':'X',
+  '压':'Y','亚':'Y','言':'Y','研':'Y','眼':'Y','阳':'Y','样':'Y','要':'Y','业':'Y',
+  '一':'Y','衣':'Y','医':'Y','已':'Y','以':'Y','义':'Y','议':'Y','因':'Y','银':'Y',
+  '应':'Y','影':'Y','用':'Y','优':'Y','由':'Y','有':'Y','又':'Y','于':'Y','与':'Y',
+  '语':'Y','育':'Y','元':'Y','园':'Y','原':'Y','远':'Y','院':'Y','约':'Y','月':'Y',
+  '越':'Y','云':'Y','运':'Y',
+  '在':'Z','再':'Z','展':'Z','站':'Z','张':'Z','招':'Z','找':'Z','照':'Z','者':'Z',
+  '这':'Z','真':'Z','正':'Z','政':'Z','之':'Z','支':'Z','知':'Z','直':'Z','指':'Z',
+  '至':'Z','制':'Z','质':'Z','治':'Z','中':'Z','种':'Z','重':'Z','州':'Z','周':'Z',
+  '主':'Z','住':'Z','注':'Z','转':'Z','装':'Z','准':'Z','资':'Z','子':'Z','自':'Z',
+  '总':'Z','走':'Z','组':'Z','最':'Z','作':'Z','坐':'Z','做':'Z',
+  // 酒店行业常用补充
+  '宾':'B','馆':'G','厅':'T','苑':'Y','阁':'G','轩':'X','庭':'T','居':'J',
+  '舍':'S','墅':'S','寓':'Y','栈':'Z','驿':'Y','庄':'Z','园':'Y','湾':'W',
+  '湖':'H','泉':'Q','柏':'B','竹':'Z','兰':'L','锦':'J','瑞':'R','豪':'H',
+  '悦':'Y','逸':'Y','雅':'Y','嘉':'J','盛':'S','隆':'L','泰':'T','恒':'H',
+  '汇':'H','丰':'F','源':'Y','达':'D','通':'T','信':'X','诚':'C','德':'D',
+  '顺':'S','兴':'X','昌':'C','祥':'X','吉':'J','佳':'J','尚':'S','御':'Y',
+  '铂':'B','凯':'K','希':'X','顿':'D','洲':'Z','际':'J','皇':'H','喜':'X',
+  '来':'L','登':'D','威':'W','斯':'S','万':'W','豪':'H','尔':'E','丽':'L',
+  '笙':'S','艾':'A','美':'M','克':'K','英':'Y','迪':'D','文':'W','华':'H',
+  '都':'D','荟':'H','熙':'X','璟':'J','琳':'L','玥':'Y','宸':'C','玺':'X',
+  '颜':'Y','朵':'D','漫':'M','芳':'F','蒂':'D','薇':'W','娜':'N','丽':'L',
+  '思':'S','漫':'M','途':'T','家':'J','致':'Z','璞':'P','悠':'Y','隐':'Y',
+  '澜':'L','泊':'B','枫':'F','蓝':'L','橙':'C','白':'B','银':'Y','金':'J',
+  '铂':'B','钻':'Z','翡':'F','翠':'C','琉':'L','璃':'L','晶':'J','钻':'Z',
+  '门':'M','口':'K','号':'H','弄':'N','路':'L','街':'J','巷':'X','里':'L',
+  '弄':'N','坊':'F','城':'C','区':'Q','座':'Z','栋':'D','室':'S','层':'C',
+  '集':'J','一':'Y','二':'E','三':'S','四':'S','五':'W','六':'L','七':'Q',
+  '八':'B','九':'J','十':'S','百':'B','千':'Q','亿':'Y','兆':'Z',
+  '圳':'Z','杭':'H','成':'C','武':'W','郑':'Z','西':'X','沈':'S','长':'C',
+  '哈':'H','济':'J','青':'Q','南':'N','宁':'N','合':'H','福':'F','厦':'S',
+  '南':'N','昆':'K','贵':'G','兰':'L','拉':'L','石':'S','太':'T','呼':'H',
+  '乌':'W','银':'Y','海':'H','珠':'Z','惠':'H','中':'Z','温':'W','义':'Y',
+};
 
 // ==================== Express 服务器 ====================
 
 const app = express();
+
+// ---- CORS 中间件 ----
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ---- 简易限流（内存实现，适合单实例）----
+const rateLimitStore = new Map();
+function rateLimitMiddleware(req, res, next) {
+  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  const now = Date.now();
+  const windowStart = now - CONFIG.rateLimitWindowMs;
+
+  if (!rateLimitStore.has(ip)) {
+    rateLimitStore.set(ip, []);
+  }
+  const timestamps = rateLimitStore.get(ip);
+  // 清理过期记录
+  while (timestamps.length > 0 && timestamps[0] < windowStart) {
+    timestamps.shift();
+  }
+  if (timestamps.length >= CONFIG.rateLimitMaxRequests) {
+    return res.status(429).json({ error: '请求过于频繁，请稍后再试' });
+  }
+  timestamps.push(now);
+  next();
+}
 
 // 健康检查（CloudBase 部署用）
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // SSE 端点：实时创建工作流
-app.get('/api/workflow/sse', (req, res) => {
+app.get('/api/workflow/sse', rateLimitMiddleware, (req, res) => {
   const hotelName = req.query.name;
 
-  if (!hotelName) {
-    res.status(400).json({ error: '必须提供酒店名称 (name)' });
+  // 输入校验
+  const validation = validateHotelName(hotelName);
+  if (!validation.valid) {
+    res.status(400).json({ error: validation.error });
     return;
   }
 
@@ -745,7 +943,12 @@ app.get('/api/workflow/sse', (req, res) => {
 
   // 心跳保活：每 10 秒发一次，防止浏览器超时断开 SSE
   const keepaliveTimer = setInterval(() => {
-    res.write(': keepalive\n\n');
+    try {
+      res.write(': keepalive\n\n');
+    } catch {
+      // 连接已关闭，清除定时器
+      clearInterval(keepaliveTimer);
+    }
   }, 10000);
 
   // 监听请求关闭，清理资源
@@ -757,32 +960,45 @@ app.get('/api/workflow/sse', (req, res) => {
 
   // 监听进度并推送到 SSE
   executor.onProgress((data) => {
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
+    try {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    } catch {
+      clearInterval(keepaliveTimer);
+    }
   });
 
   // 异步执行工作流
   executor.run(hotelName).then((result) => {
     clearInterval(keepaliveTimer);
-    if (result.success) {
-      addHistoryRecord(result); // 自动保存历史记录
-      res.write(`data: ${JSON.stringify({ step: 'complete', ...result })}\n\n`);
-    } else {
-      res.write(`data: ${JSON.stringify({ step: 'error', error: result.error || '执行失败' })}\n\n`);
+    try {
+      if (result.success) {
+        addHistoryRecord(result); // 自动保存历史记录
+        res.write(`data: ${JSON.stringify({ step: 'complete', ...result })}\n\n`);
+      } else {
+        res.write(`data: ${JSON.stringify({ step: 'error', error: result.error || '执行失败' })}\n\n`);
+      }
+      res.end();
+    } catch {
+      // 连接已关闭
     }
-    res.end();
   }).catch((err) => {
     clearInterval(keepaliveTimer);
-    res.write(`data: ${JSON.stringify({ step: 'error', error: err.message })}\n\n`);
-    res.end();
+    try {
+      res.write(`data: ${JSON.stringify({ step: 'error', error: err.message })}\n\n`);
+      res.end();
+    } catch {
+      // 连接已关闭
+    }
   });
 });
 
 // 非流式端点（简单模式）
-app.post('/api/workflow/run', async (req, res) => {
+app.post('/api/workflow/run', rateLimitMiddleware, async (req, res) => {
   const { name } = req.body;
 
-  if (!name) {
-    return res.status(400).json({ error: '必须提供酒店名称' });
+  const validation = validateHotelName(name);
+  if (!validation.valid) {
+    return res.status(400).json({ error: validation.error });
   }
 
   const executor = new HotelWorkflowExecutor(CONFIG);
@@ -792,7 +1008,7 @@ app.post('/api/workflow/run', async (req, res) => {
     logs.push(data);
   });
 
-  const result = await executor.run(name);
+  const result = await executor.run(validation.sanitized);
   // 成功时自动保存历史
   if (result.success) {
     addHistoryRecord(result);
@@ -826,11 +1042,9 @@ app.delete('/api/history', (req, res) => {
 });
 
 // ===== Vercel Serverless 导出 =====
-// Vercel 使用 serverless 函数，不走 app.listen
-// 本地开发才启动 HTTP 服务
 module.exports = app;
 
-if (require.main === module || !process.env.VERCEL) {
+if (require.main === module || (!process.env.VERCEL && !process.env.TCB_ENV)) {
   app.listen(CONFIG.port, () => {
     const envLabel = CONFIG.hotelUrl.includes('42.194.213.245') ? '测试环境' : '生产环境';
     console.log(`\n========================================`);

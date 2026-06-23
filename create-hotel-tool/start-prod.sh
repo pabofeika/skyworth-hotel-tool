@@ -1,7 +1,7 @@
 #!/bin/bash
 # ============================================================
-# 创建酒店工具 - 启动器
-# 双击此文件即可启动服务并自动打开浏览器
+# 创建酒店工具 - 启动器（正式环境）
+# 通过 .env 文件加载配置，不硬编码敏感信息
 # ============================================================
 
 # 项目根目录
@@ -15,10 +15,20 @@ fi
 cd "$PROJECT_DIR" || { echo "❌ 找不到项目目录"; exit 1; }
 
 echo "============================================"
-echo "  创建酒店工具  v1.0"
+echo "  创建酒店工具  v1.0（正式环境）"
 echo "============================================"
 echo ""
-echo "📌 正在启动服务（带 DeepSeek AI 拼音转换）..."
+
+# 检查 .env 文件是否存在
+if [ -f ".env" ]; then
+  echo "📌 从 .env 文件加载配置..."
+  export $(grep -v '^#' .env | xargs)
+else
+  echo "⚠️  未找到 .env 文件，使用默认配置"
+  echo "   请复制 .env.example 为 .env 并填入真实凭据"
+fi
+
+echo "📌 正在启动服务（正式环境）..."
 
 # 检查端口 3000
 if lsof -ti:3000 &>/dev/null; then
@@ -30,8 +40,8 @@ fi
 # 自动打开浏览器
 (sleep 2 && open "http://localhost:3000") &
 
-# 启动服务器（带 DeepSeek API Key）
-DEEPSEEK_API_KEY=[REDACTED_API_KEY] node server.js
+# 启动服务器（配置从 .env 读取）
+node server.js
 
 echo ""
 echo "服务已停止。"
