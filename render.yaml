@@ -23,28 +23,37 @@ services:
     # 部署后请在 Render Dashboard → Environment 中填入真实值
     envVars:
       - key: HOTEL_URL
+        value: https://cooshare.coocaa.com/hotel
         sync: false
       - key: FID
+        value: "404"
         sync: false
       - key: LOGIN_USERNAME
+        value: n8n
         sync: false
       - key: LOGIN_PASSWORD
+        value: 5877e26c078d6409fde54d508bf25721
         sync: false
       - key: SOURCE_HOTEL_ID
+        value: "214"
         sync: false
       - key: DEEPSEEK_API_KEY
+        value: sk-b8X8vZ424xsFLpRUlGWQQQ
         sync: false
       - key: DEEPSEEK_API_URL
-        value: https://api.deepseek.com/chat/completions
+        value: http://139.199.17.11/v1/chat/completions
         sync: false
       - key: DEEPSEEK_MODEL
         value: deepseek-v4-pro
         sync: false
       - key: HUASHI_URL
+        value: https://skyworth-business.com/huashi-api
         sync: false
       - key: HUASHI_USERNAME
+        value: chenlingN8N
         sync: false
       - key: HUASHI_PASSWORD
+        value: chenlingN8N
         sync: false
       - key: REQUEST_TIMEOUT
         value: "30000"

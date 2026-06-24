@@ -17,12 +17,12 @@ const CONFIG = {
   hotelUrl: process.env.HOTEL_URL || 'https://cooshare.coocaa.com/hotel',
   fid: parseInt(process.env.FID || '404'),
   loginUsername: process.env.LOGIN_USERNAME || 'n8n',
-  loginPassword: process.env.LOGIN_PASSWORD || '',
+  loginPassword: process.env.LOGIN_PASSWORD || '5877e26c078d6409fde54d508bf25721',
   sourceHotelId: parseInt(process.env.SOURCE_HOTEL_ID || '214'),
 
   // DeepSeek
-  deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
-  deepseekApiUrl: process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/chat/completions',
+  deepseekApiKey: process.env.DEEPSEEK_API_KEY || 'sk-b8X8vZ424xsFLpRUlGWQQQ',
+  deepseekApiUrl: process.env.DEEPSEEK_API_URL || 'http://139.199.17.11/v1/chat/completions',
   deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro',
 
   // 用户密码哈希
@@ -34,9 +34,9 @@ const CONFIG = {
   requestTimeout: parseInt(process.env.REQUEST_TIMEOUT || '30000'),
 
   // 刷机平台
-  huashiUrl: process.env.HUASHI_URL || '',
-  huashiUsername: process.env.HUASHI_USERNAME || '',
-  huashiPassword: process.env.HUASHI_PASSWORD || '',
+  huashiUrl: process.env.HUASHI_URL || 'https://skyworth-business.com/huashi-api',
+  huashiUsername: process.env.HUASHI_USERNAME || 'chenlingN8N',
+  huashiPassword: process.env.HUASHI_PASSWORD || 'chenlingN8N',
 
   // 输入验证
   maxHotelNameLength: parseInt(process.env.MAX_HOTEL_NAME_LENGTH || '100'),
