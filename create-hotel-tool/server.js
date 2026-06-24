@@ -23,10 +23,10 @@ const CONFIG = {
   // DeepSeek
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
   deepseekApiUrl: process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/chat/completions',
-  deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+  deepseekModel: process.env.DEEPSEEK_MODEL || 'deepseek-v4-pro',
 
   // 用户密码哈希
-  userPasswordHash: process.env.USER_PASSWORD_HASH || '[REDACTED_PASSWORD_HASH]',
+  userPasswordHash: process.env.USER_PASSWORD_HASH || '202cb962ac59075b964b07152d234b70',
 
   port: parseInt(process.env.PORT || '3000'),
 

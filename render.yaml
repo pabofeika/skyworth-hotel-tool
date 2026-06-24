@@ -38,7 +38,7 @@ services:
         value: https://api.deepseek.com/chat/completions
         sync: false
       - key: DEEPSEEK_MODEL
-        value: deepseek-chat
+        value: deepseek-v4-pro
         sync: false
       - key: HUASHI_URL
         sync: false
