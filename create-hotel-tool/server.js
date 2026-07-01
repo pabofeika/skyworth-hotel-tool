@@ -1117,7 +1117,7 @@ app.post('/api/upload-images', rateLimitMiddleware, async (req, res) => {
         container_infos: [{
           type: 1, name: 'WELCOME', title: '欢迎页', child_type: 0, desc: '包含欢迎页相关信息',
           container_infos: [
-            { type: 2, name: 'WELCOME_BG', title: '欢迎页背景', push_mode: 0, onOrOff: 1,
+            { type: 2, name: 'WELCOME_BG_IMAGE', title: '欢迎页背景', push_mode: 0, onOrOff: 1,
               component_infos: [{ type: 1, value: '' }], child_type: 1, desc: '欢迎页背景图', container_infos: [],
               expand_info: { sup_types: [1], max_elem: '1', en_title: 'welcome bg', ext_s: [] },
             },
