@@ -628,31 +628,33 @@ class HotelWorkflowExecutor {
 	    this._progress('welcome_msg', `欢迎词更新结果: ${JSON.stringify(res.data)}`);
 	  }
 
-	  /** Step 6a: 生成欢迎页背景图并保存到静态目录供下载 */
+	  /** Step 6a: 生成欢迎页背景图并保存供下载 */
 	  async stepWelcomeImage(hotelName) {
 	    this._progress('welcome_img', '正在生成欢迎页背景图...');
 	    try {
 	      const imgBuffer = await generateWelcomeImage(hotelName);
 	      const filename = `welcome_${Date.now()}.png`;
-	      const publicPath = path.join(__dirname, 'public', filename);
-	      fs.writeFileSync(publicPath, imgBuffer);
-	      this.welcomeImageUrl = `/${filename}`;
-	      this._progress('welcome_img', `🖼️ 欢迎图已生成 (${(imgBuffer.length / 1024).toFixed(0)}KB) <a href="${this.welcomeImageUrl}" target="_blank">点击下载</a>`);
+	      const tmpDir = process.env.VERCEL || process.env.TCB_ENV ? '/tmp' : path.join(__dirname, 'public');
+	      const filePath = path.join(tmpDir, filename);
+	      fs.writeFileSync(filePath, imgBuffer);
+	      this.welcomeImageUrl = `/api/images/${filename}`;
+	      this._progress('welcome_img', `🖼️ 欢迎图已生成 (${(imgBuffer.length / 1024).toFixed(0)}KB)`);
 	    } catch (err) {
 	      this._progress('welcome_img', `⚠️ 欢迎图生成失败: ${err.message}`);
 	    }
 	  }
 
-	  /** Step 6b: 生成Logo图并保存到静态目录供下载 */
+	  /** Step 6b: 生成Logo图并保存供下载 */
 	  async stepLogoImage(hotelName) {
 	    this._progress('logo_img', '正在生成酒店Logo图...');
 	    try {
 	      const imgBuffer = await generateLogoImage(hotelName);
 	      const filename = `logo_${Date.now()}.png`;
-	      const publicPath = path.join(__dirname, 'public', filename);
-	      fs.writeFileSync(publicPath, imgBuffer);
-	      this.logoImageUrl = `/${filename}`;
-	      this._progress('logo_img', `✨ Logo已生成 (${(imgBuffer.length / 1024).toFixed(0)}KB) <a href="${this.logoImageUrl}" target="_blank">点击下载</a>`);
+	      const tmpDir = process.env.VERCEL || process.env.TCB_ENV ? '/tmp' : path.join(__dirname, 'public');
+	      const filePath = path.join(tmpDir, filename);
+	      fs.writeFileSync(filePath, imgBuffer);
+	      this.logoImageUrl = `/api/images/${filename}`;
+	      this._progress('logo_img', `✨ Logo已生成 (${(imgBuffer.length / 1024).toFixed(0)}KB)`);
 	    } catch (err) {
 	      this._progress('logo_img', `⚠️ Logo生成失败: ${err.message}`);
 	    }
@@ -952,6 +954,25 @@ function rateLimitMiddleware(req, res, next) {
 // 健康检查（CloudBase 部署用）
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
+// 图片下载端点（支持 Vercel /tmp 和本地 public 目录）
+app.get('/api/images/:filename', (req, res) => {
+  const filename = req.params.filename;
+  // 安全检查：只允许 welcome_/logo_ 前缀的 png
+  if (!/^(welcome_|logo_)\d+\.png$/.test(filename)) {
+    return res.status(404).json({ error: '图片未找到' });
+  }
+  const paths = [
+    path.join('/tmp', filename),
+    path.join(__dirname, 'public', filename),
+  ];
+  for (const p of paths) {
+    if (fs.existsSync(p)) {
+      return res.sendFile(p);
+    }
+  }
+  res.status(404).json({ error: '图片未找到或已过期' });
 });
 
 app.get('/', (req, res) => {
