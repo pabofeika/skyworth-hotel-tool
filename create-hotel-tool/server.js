@@ -556,49 +556,27 @@ class HotelWorkflowExecutor {
 	      style_name: '创维标准样式（语音版）',
 	      push_name: '欢迎词',
 	      root: {
-	        name: 'ROOT',
-	        type: 0,
-	        title: '标准版',
-	        child_type: 0,
-	        desc: '酒店通用样式001',
+	        name: 'ROOT', type: 0, title: '标准版', child_type: 0, desc: '酒店通用样式001',
 	        container_infos: [
 	          {
-	            type: 1,
-	            name: 'WELCOME',
-	            title: '欢迎页',
-	            child_type: 0,
-	            desc: '包含欢迎页相关信息',
+	            type: 1, name: 'WELCOME', title: '欢迎页', child_type: 0, desc: '包含欢迎页相关信息',
 	            container_infos: [
 	              {
-	                type: 2,
-	                name: 'WELCOME_TEXT',
-	                title: '欢迎词',
-	                push_mode: 0,
-	                onOrOff: 1,
+	                type: 2, name: 'WELCOME_TEXT', title: '欢迎词', push_mode: 0, onOrOff: 1,
 	                component_infos: [
 	                  { type: 4, value: `欢迎下榻${hotelName}` },
 	                  { type: 0, value: '1' },
 	                ],
-	                child_type: 1,
-	                desc: '设置欢迎词',
-	                container_infos: [],
+	                child_type: 1, desc: '设置欢迎词', container_infos: [],
 	                expand_info: { sup_types: [4, 0], max_elem: '3', en_title: 'welcome text', ext_s: [] },
 	              },
 	              {
-	                type: 2,
-	                name: 'WELCOME_VOICE_BROADCAST',
-	                title: '语音播报',
-	                push_mode: 0,
-	                onOrOff: 1,
-	                component_infos: [
-	                  {
-	                    type: 4,
-	                    value: `欢迎下榻${hotelName}，我是您的AI客房管家小维。\n无论是调节空调温度、点亮温馨灯光，还是轻启窗帘迎接晨光，您只需轻声唤我："小维小维，打开空调"或"小维小维，打开灯光"，祝您入住愉快！`,
-	                  },
-	                ],
-	                child_type: 1,
-	                desc: '语音播报',
-	                container_infos: [],
+	                type: 2, name: 'WELCOME_VOICE_BROADCAST', title: '语音播报', push_mode: 0, onOrOff: 1,
+	                component_infos: [{
+	                  type: 4,
+	                  value: `欢迎下榻${hotelName}，我是您的AI客房管家小维。\n无论是调节空调温度、点亮温馨灯光，还是轻启窗帘迎接晨光，您只需轻声唤我："小维小维，打开空调"或"小维小维，打开灯光"，祝您入住愉快！`,
+	                }],
+	                child_type: 1, desc: '语音播报', container_infos: [],
 	                expand_info: { sup_types: [4], ext_s: [], max_elem: 1 },
 	              },
 	            ],
@@ -606,12 +584,7 @@ class HotelWorkflowExecutor {
 	        ],
 	      },
 	      plan_detail: { plan_type: 0 },
-	      goals: [
-	        {
-	          hid: this.hotelId,
-	          room_nums: ['----'],
-	        },
-	      ],
+	      goals: [{ hid: this.hotelId, room_nums: ['----'] }],
 	    };
 
 	    const http = createHttpClient();
@@ -619,44 +592,35 @@ class HotelWorkflowExecutor {
 	    form.append('paras', JSON.stringify(styleData));
 
 	    const res = await http.post(url, form, {
-	      headers: {
-	        ...form.getHeaders(),
-	        Cookie: this.cookies.switch,
-	      },
+	      headers: { ...form.getHeaders(), Cookie: this.cookies.switch },
 	    });
 
 	    this._progress('welcome_msg', `欢迎词更新结果: ${JSON.stringify(res.data)}`);
 	  }
 
-	  /** Step 6a: 生成欢迎页背景图并保存供下载 */
+	  /** Step 6a: 保存欢迎图到本地供下载（上传已在上一步完成） */
 	  async stepWelcomeImage(hotelName) {
-	    this._progress('welcome_img', '正在生成欢迎页背景图...');
 	    try {
 	      const imgBuffer = await generateWelcomeImage(hotelName);
 	      const filename = `welcome_${Date.now()}.png`;
 	      const tmpDir = process.env.VERCEL || process.env.TCB_ENV ? '/tmp' : path.join(__dirname, 'public');
-	      const filePath = path.join(tmpDir, filename);
-	      fs.writeFileSync(filePath, imgBuffer);
-	      this.welcomeImageUrl = `/api/images/${filename}`;
-	      this._progress('welcome_img', `🖼️ 欢迎图已生成 (${(imgBuffer.length / 1024).toFixed(0)}KB)`);
+	      fs.writeFileSync(path.join(tmpDir, filename), imgBuffer);
+	      this._progress('welcome_img', `🖼️ 欢迎图已保存 (${(imgBuffer.length/1024).toFixed(0)}KB) → /api/images/${filename}`);
 	    } catch (err) {
-	      this._progress('welcome_img', `⚠️ 欢迎图生成失败: ${err.message}`);
+	      this._progress('welcome_img', `⚠️ 欢迎图保存失败: ${err.message}`);
 	    }
 	  }
 
-	  /** Step 6b: 生成Logo图并保存供下载 */
+	  /** Step 6b: 保存Logo到本地供下载（上传已在上一步完成） */
 	  async stepLogoImage(hotelName) {
-	    this._progress('logo_img', '正在生成酒店Logo图...');
 	    try {
 	      const imgBuffer = await generateLogoImage(hotelName);
 	      const filename = `logo_${Date.now()}.png`;
 	      const tmpDir = process.env.VERCEL || process.env.TCB_ENV ? '/tmp' : path.join(__dirname, 'public');
-	      const filePath = path.join(tmpDir, filename);
-	      fs.writeFileSync(filePath, imgBuffer);
-	      this.logoImageUrl = `/api/images/${filename}`;
-	      this._progress('logo_img', `✨ Logo已生成 (${(imgBuffer.length / 1024).toFixed(0)}KB)`);
+	      fs.writeFileSync(path.join(tmpDir, filename), imgBuffer);
+	      this._progress('logo_img', `✨ Logo已保存 (${(imgBuffer.length/1024).toFixed(0)}KB) → /api/images/${filename}`);
 	    } catch (err) {
-	      this._progress('logo_img', `⚠️ Logo生成失败: ${err.message}`);
+	      this._progress('logo_img', `⚠️ Logo保存失败: ${err.message}`);
 	    }
 	  }
 
