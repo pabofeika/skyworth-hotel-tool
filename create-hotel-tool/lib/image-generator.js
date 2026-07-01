@@ -54,7 +54,7 @@ async function generateWelcomeImage(hotelName) {
   const fontSize = 26;
   const lineHeight = 40;
   const color = '#ffffff';
-  const shadowColor = 'rgba(0,0,0,0.5)';
+  const shadowColor = '#000000';
   const posRatioX = 0.5;   // 50%
   const posRatioY = 0.3;   // 30%
   const maxWidthRatio = 0.9; // 90%
@@ -90,7 +90,8 @@ async function generateWelcomeImage(hotelName) {
  */
 async function generateLogoImage(hotelName) {
   const text = hotelName || 'Logo 文字';
-  const fontSize = 60;
+  // 超过8个字用50px，否则60px
+  const fontSize = text.length > 8 ? 50 : 60;
   const charSpacing = 2;
   const height = 70;
 
