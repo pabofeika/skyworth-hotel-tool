@@ -602,7 +602,7 @@ class HotelWorkflowExecutor {
 	  async stepWelcomeImage(hotelName) {
 	    try {
 	      const imgBuffer = await generateWelcomeImage(hotelName);
-	      const filename = `welcome_${Date.now()}.png`;
+	      const filename = `welcome_${Date.now()}.jpeg`;
 	      const tmpDir = process.env.VERCEL || process.env.TCB_ENV ? '/tmp' : path.join(__dirname, 'public');
 	      fs.writeFileSync(path.join(tmpDir, filename), imgBuffer);
 	      this._progress('welcome_img', `🖼️ 欢迎图已保存 (${(imgBuffer.length/1024).toFixed(0)}KB) → /api/images/${filename}`);
@@ -924,7 +924,7 @@ app.get('/health', (req, res) => {
 app.get('/api/images/:filename', (req, res) => {
   const filename = req.params.filename;
   // 安全检查：只允许 welcome_/logo_ 前缀的 png
-  if (!/^(welcome_|logo_)\d+\.png$/.test(filename)) {
+  if (!/^(welcome_|logo_)\d+\.(png|jpeg)$/.test(filename)) {
     return res.status(404).json({ error: '图片未找到' });
   }
   const paths = [

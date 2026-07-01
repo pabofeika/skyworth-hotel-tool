@@ -80,7 +80,7 @@ async function generateWelcomeImage(hotelName) {
     ctx.fillText(lines[i], cx, sy + i * lineHeight);
   }
 
-  return canvas.toBuffer('image/png');
+  return canvas.toBuffer('image/jpeg', { quality: 0.85 });
 }
 
 /**

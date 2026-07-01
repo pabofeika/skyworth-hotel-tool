@@ -31,4 +31,6 @@ npm-debug.log*
 
 # 生成的图片（运行时产出）
 public/welcome_*.png
+public/welcome_*.webp
 public/logo_*.png
+public/logo_*.webp
