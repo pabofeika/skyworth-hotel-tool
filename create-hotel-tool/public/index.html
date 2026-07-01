@@ -453,7 +453,19 @@ function startWorkflow() {
             return;
         }
 
-        if (data.step === 'error' || data.success === false) {
+        if (data.step === 'error' && data.error !== undefined) {
+            // 最终错误（来自服务器 then/catch），关闭连接显示错误
+            workflowEnded = true;
+            clearTimeout(dataTimeout);
+            eventSource.close();
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').textContent = '🔄 重试';
+            setStatus('error', `❌ ${data.error || '执行失败'}`);
+            addLog({ step: 'error', message: data.error || '执行失败', timestamp: new Date().toISOString() });
+            return;
+        }
+
+        if (data.success === false) {
             workflowEnded = true;
             clearTimeout(dataTimeout);
             eventSource.close();
@@ -462,6 +474,13 @@ function startWorkflow() {
             const errMsg = data.error || '执行过程中发生错误，请检查后台日志';
             setStatus('error', `❌ ${errMsg}`);
             addLog({ step: 'error', message: errMsg, timestamp: new Date().toISOString() });
+            return;
+        }
+
+        // 进度级 error 消息（如 stepLogin 失败），当普通日志展示，不关连接
+        if (data.step === 'error') {
+            addLog(data);
+            setStatus('error', data.message || '发生错误');
             return;
         }
 
