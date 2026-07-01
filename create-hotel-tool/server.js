@@ -1037,6 +1037,125 @@ app.post('/api/workflow/run', rateLimitMiddleware, async (req, res) => {
   res.json({ ...result, logs });
 });
 
+// 已有酒店上传图片
+app.post('/api/upload-images', rateLimitMiddleware, async (req, res) => {
+  const { hotelName } = req.body;
+
+  const validation = validateHotelName(hotelName);
+  if (!validation.valid) {
+    return res.status(400).json({ error: validation.error });
+  }
+  const name = validation.sanitized;
+
+  try {
+    // 登录
+    const http = createHttpClient();
+    const loginRes = await http.post(`${CONFIG.hotelUrl}/v3/web/login/in`,
+      { name: CONFIG.loginUsername, pswd: CONFIG.loginPassword },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    const cookie = loginRes.headers['set-cookie']?.[0];
+    if (!cookie) return res.status(500).json({ error: '登录失败' });
+
+    // 切换酒店
+    const switchRes = await http.post(`${CONFIG.hotelUrl}/v3/web/login/env/sw_htl`,
+      { hid: 693 },  // 灵哥晒太阳
+      { headers: { 'Content-Type': 'application/json', Cookie: cookie } }
+    );
+    const swCookie = switchRes.headers['set-cookie']?.[0] || cookie;
+
+    // 生成图片
+    const welcomeBuf = await generateWelcomeImage(name);
+    const logoBuf = await generateLogoImage(name);
+
+    // 构建上传 JSON（含图片组件）
+    const styleData = {
+      style_name: '创维标准样式（语音版）',
+      push_name: '欢迎词',
+      root: {
+        name: 'ROOT', type: 0, title: '标准版', child_type: 0, desc: '酒店通用样式001',
+        container_infos: [{
+          type: 1, name: 'WELCOME', title: '欢迎页', child_type: 0, desc: '包含欢迎页相关信息',
+          container_infos: [
+            { type: 2, name: 'WELCOME_BG', title: '欢迎页背景', push_mode: 0, onOrOff: 1,
+              component_infos: [{ type: 1, value: '' }], child_type: 1, desc: '欢迎页背景图', container_infos: [],
+              expand_info: { sup_types: [1], max_elem: '1', en_title: 'welcome bg', ext_s: [] },
+            },
+            { type: 2, name: 'WELCOME_LOGO', title: '欢迎页LOGO', push_mode: 0, onOrOff: 1,
+              component_infos: [{ type: 1, value: '' }], child_type: 1, desc: '欢迎页Logo', container_infos: [],
+              expand_info: { sup_types: [1], max_elem: '1', en_title: 'welcome logo', ext_s: [] },
+            },
+          ],
+        }],
+      },
+      plan_detail: { plan_type: 0 },
+      goals: [{ hid: 693, room_nums: ['----'] }],
+    };
+
+    // 手动拼接 multipart body
+    const boundary = `----NodeJS${Date.now()}`;
+    const parasStr = JSON.stringify(styleData);
+    const crlf = '\r\n';
+    
+    const chunks = [
+      Buffer.from(`--${boundary}${crlf}Content-Disposition: form-data; name="paras"${crlf}${crlf}${parasStr}${crlf}`),
+    ];
+    if (welcomeBuf) {
+      chunks.push(Buffer.from(`--${boundary}${crlf}Content-Disposition: form-data; name="files"; filename="welcome_bg.jpg"${crlf}Content-Type: image/jpeg${crlf}${crlf}`));
+      chunks.push(welcomeBuf);
+      chunks.push(Buffer.from(crlf));
+    }
+    if (logoBuf) {
+      chunks.push(Buffer.from(`--${boundary}${crlf}Content-Disposition: form-data; name="files"; filename="welcome_logo.png"${crlf}Content-Type: image/png${crlf}${crlf}`));
+      chunks.push(logoBuf);
+      chunks.push(Buffer.from(crlf));
+    }
+    chunks.push(Buffer.from(`--${boundary}--${crlf}`));
+    const body = Buffer.concat(chunks);
+
+    const httpModule = require('http');
+    const urlObj = new URL(`${CONFIG.hotelUrl}/v3/web/push/style`);
+    const options = {
+      hostname: urlObj.hostname,
+      port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+      path: urlObj.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': body.length,
+        'Cookie': swCookie,
+      },
+    };
+    const lib = urlObj.protocol === 'https:' ? require('https') : httpModule;
+
+    const upRes = await new Promise((resolve, reject) => {
+      const req = lib.request(options, (r) => {
+        let data = '';
+        r.on('data', d => data += d);
+        r.on('end', () => {
+          try { resolve({ code: r.statusCode, data: JSON.parse(data) }); }
+          catch { resolve({ code: r.statusCode, data }); }
+        });
+      });
+      req.on('error', reject);
+      req.write(body);
+      req.end();
+    });
+
+    res.json({
+      success: upRes.data?.code === 10000,
+      code: upRes.data?.code,
+      msg: upRes.data?.msg,
+      images: {
+        welcome: `${welcomeBuf.length} bytes`,
+        logo: `${logoBuf.length} bytes`,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ==================== 历史记录 API ====================
 
 /** 获取历史记录列表 */
