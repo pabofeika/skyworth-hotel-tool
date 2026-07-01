@@ -587,7 +587,7 @@ class HotelWorkflowExecutor {
 	    if (welcomeBuf) {
 	      changedComponents.push({
 	        path: '欢迎页 / 欢迎页背景',
-	        name: 'WELCOME_BG',
+	        name: 'WELCOME_BG_IMAGE',
 	        push_mode: 0, onOrOff: 1,
 	        component_infos: [{ type: 1, key: welcomeKey }],
 	      });
