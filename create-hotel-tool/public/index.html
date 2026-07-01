@@ -167,10 +167,12 @@
         .log-entry.create_hotel .log-icon { color: var(--success); }
         .log-entry.switch_hotel .log-icon { color: var(--primary-light); }
         .log-entry.copy_template .log-icon { color: #8b5cf6; }
-        .log-entry.welcome_msg .log-icon { color: #ec4899; }
-        .log-entry.pinyin .log-icon { color: #14b8a6; }
-        .log-entry.create_user .log-icon { color: #f97316; }
-        .log-entry.done .log-icon { color: var(--success); }
+.log-entry.welcome_msg .log-icon { color: #ec4899; }
+.log-entry.pinyin .log-icon { color: #14b8a6; }
+.log-entry.create_user .log-icon { color: #f97316; }
+.log-entry.welcome_img .log-icon { color: #8b5cf6; }
+.log-entry.logo_img .log-icon { color: #06b6d4; }
+.log-entry.done .log-icon { color: var(--success); }
         .log-entry.error .log-icon { color: var(--error); }
         .log-entry.done { background: #f0fdf4; }
         .log-entry.error { background: #fef2f2; }
@@ -339,7 +341,7 @@
 
 <div class="header">
     <h1>🏨 创建酒店工具</h1>
-    <p>自动创建酒店 + 复制模板 + 欢迎词 + 账号</p>
+	    <p>自动创建酒店 + 复制模板 + 欢迎词 + 欢迎图/Logo + 账号</p>
 </div>
 
 <div class="container">
@@ -431,8 +433,8 @@ function startWorkflow() {
     // 标记工作流是否已结束（防止连接关闭后的 onerror 误报）
     let workflowEnded = false;
 
-    let stepCount = 0;
-    const totalSteps = 8;
+	    let stepCount = 0;
+	    const totalSteps = 10;
 
     eventSource.onmessage = function(e) {
         // 有数据到达，重置前台超时计时器
@@ -514,19 +516,22 @@ function addLog(data) {
     const div = document.createElement('div');
     div.className = `log-entry ${data.step || ''}`;
 
-    const icons = {
-        env: '⚙️',
-        login: '🔑', 
-        create_hotel: '🏨',
-        switch_hotel: '🔄',
-        copy_template: '📋',
-        welcome_msg: '📝',
-        pinyin: '🔤',
-        create_user: '👤',
-        done: '✅',
-        error: '❌',
-        start: '🚀'
-    };
+	    const icons = {
+	        env: '⚙️',
+	        login: '🔑', 
+	        create_hotel: '🏨',
+	        switch_hotel: '🔄',
+	        copy_template: '📋',
+	        welcome_msg: '📝',
+	        welcome_img: '🖼️',
+	        logo_img: '✨',
+	        pinyin: '🔤',
+	        create_user: '👤',
+	        huashi_config: '🔧',
+	        done: '✅',
+	        error: '❌',
+	        start: '🚀'
+	    };
 
     const time = new Date(data.timestamp || Date.now());
     const timeStr = time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });

@@ -10,6 +10,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { EventEmitter } = require('events');
+const { generateWelcomeImage, generateLogoImage } = require('./lib/image-generator');
 
 // ==================== 配置 ====================
 const CONFIG = {
@@ -386,13 +387,19 @@ class HotelWorkflowExecutor {
       // Step 5: 复制模板
       await this.stepCopyTemplate();
 
-      // Step 6: 更新欢迎词
-      await this.stepUpdateWelcome(hotelName);
+	      // Step 6: 更新欢迎词
+	      await this.stepUpdateWelcome(hotelName);
 
-      // Step 7: 中文转拼音首字母
-      await this.stepConvertPinyin(hotelName);
+	      // Step 6a: 生成欢迎图 + 上传
+	      await this.stepWelcomeImage(hotelName);
 
-      // Step 8: 创建用户（失败则重命名重试）
+	      // Step 6b: 生成Logo图 + 上传
+	      await this.stepLogoImage(hotelName);
+
+	      // Step 7: 中文转拼音首字母
+	      await this.stepConvertPinyin(hotelName);
+
+	      // Step 8: 创建用户（失败则重命名重试）
       await this.stepCreateUser();
 
       // Step 9: 创建刷机平台预设配置（可选，不影响主流程）
@@ -539,90 +546,119 @@ class HotelWorkflowExecutor {
     this._progress('copy_template', `模板复制结果: ${JSON.stringify(res.data)}`);
   }
 
-  /** Step 6: 更新欢迎词 */
-  async stepUpdateWelcome(hotelName) {
-    this._progress('welcome_msg', '正在更新欢迎词...');
+	  /** Step 6: 更新欢迎词 */
+	  async stepUpdateWelcome(hotelName) {
+	    this._progress('welcome_msg', '正在更新欢迎词...');
 
-    const url = `${this.config.hotelUrl}/v3/web/push/style`;
+	    const url = `${this.config.hotelUrl}/v3/web/push/style`;
 
-    // 构建欢迎词 JSON
-    const styleData = {
-      style_name: '创维标准样式（语音版）',
-      push_name: '欢迎词',
-      root: {
-        name: 'ROOT',
-        type: 0,
-        title: '标准版',
-        child_type: 0,
-        desc: '酒店通用样式001',
-        container_infos: [
-          {
-            type: 1,
-            name: 'WELCOME',
-            title: '欢迎页',
-            child_type: 0,
-            desc: '包含欢迎页相关信息',
-            container_infos: [
-              {
-                type: 2,
-                name: 'WELCOME_TEXT',
-                title: '欢迎词',
-                push_mode: 0,
-                onOrOff: 1,
-                component_infos: [
-                  { type: 4, value: `欢迎下榻${hotelName}` },
-                  { type: 0, value: '1' },
-                ],
-                child_type: 1,
-                desc: '设置欢迎词',
-                container_infos: [],
-                expand_info: { sup_types: [4, 0], max_elem: '3', en_title: 'welcome text', ext_s: [] },
-              },
-              {
-                type: 2,
-                name: 'WELCOME_VOICE_BROADCAST',
-                title: '语音播报',
-                push_mode: 0,
-                onOrOff: 1,
-                component_infos: [
-                  {
-                    type: 4,
-                    value: `欢迎下榻${hotelName}，我是您的AI客房管家小维。\n无论是调节空调温度、点亮温馨灯光，还是轻启窗帘迎接晨光，您只需轻声唤我："小维小维，打开空调"或"小维小维，打开灯光"，祝您入住愉快！`,
-                  },
-                ],
-                child_type: 1,
-                desc: '语音播报',
-                container_infos: [],
-                expand_info: { sup_types: [4], ext_s: [], max_elem: 1 },
-              },
-            ],
-          },
-        ],
-      },
-      plan_detail: { plan_type: 0 },
-      goals: [
-        {
-          hid: this.hotelId,
-          room_nums: ['----'],
-        },
-      ],
-    };
+	    const styleData = {
+	      style_name: '创维标准样式（语音版）',
+	      push_name: '欢迎词',
+	      root: {
+	        name: 'ROOT',
+	        type: 0,
+	        title: '标准版',
+	        child_type: 0,
+	        desc: '酒店通用样式001',
+	        container_infos: [
+	          {
+	            type: 1,
+	            name: 'WELCOME',
+	            title: '欢迎页',
+	            child_type: 0,
+	            desc: '包含欢迎页相关信息',
+	            container_infos: [
+	              {
+	                type: 2,
+	                name: 'WELCOME_TEXT',
+	                title: '欢迎词',
+	                push_mode: 0,
+	                onOrOff: 1,
+	                component_infos: [
+	                  { type: 4, value: `欢迎下榻${hotelName}` },
+	                  { type: 0, value: '1' },
+	                ],
+	                child_type: 1,
+	                desc: '设置欢迎词',
+	                container_infos: [],
+	                expand_info: { sup_types: [4, 0], max_elem: '3', en_title: 'welcome text', ext_s: [] },
+	              },
+	              {
+	                type: 2,
+	                name: 'WELCOME_VOICE_BROADCAST',
+	                title: '语音播报',
+	                push_mode: 0,
+	                onOrOff: 1,
+	                component_infos: [
+	                  {
+	                    type: 4,
+	                    value: `欢迎下榻${hotelName}，我是您的AI客房管家小维。\n无论是调节空调温度、点亮温馨灯光，还是轻启窗帘迎接晨光，您只需轻声唤我："小维小维，打开空调"或"小维小维，打开灯光"，祝您入住愉快！`,
+	                  },
+	                ],
+	                child_type: 1,
+	                desc: '语音播报',
+	                container_infos: [],
+	                expand_info: { sup_types: [4], ext_s: [], max_elem: 1 },
+	              },
+	            ],
+	          },
+	        ],
+	      },
+	      plan_detail: { plan_type: 0 },
+	      goals: [
+	        {
+	          hid: this.hotelId,
+	          room_nums: ['----'],
+	        },
+	      ],
+	    };
 
-    const http = createHttpClient();
-    const form = new FormData();
-    form.append('paras', JSON.stringify(styleData));
+	    const http = createHttpClient();
+	    const form = new FormData();
+	    form.append('paras', JSON.stringify(styleData));
 
-    const res = await http.post(url, form, {
-      headers: {
-        ...form.getHeaders(),
-        Cookie: this.cookies.switch,
-      },
-    });
+	    const res = await http.post(url, form, {
+	      headers: {
+	        ...form.getHeaders(),
+	        Cookie: this.cookies.switch,
+	      },
+	    });
 
-    this._progress('welcome_msg', `欢迎词更新结果: ${JSON.stringify(res.data)}`);
-  }
+	    this._progress('welcome_msg', `欢迎词更新结果: ${JSON.stringify(res.data)}`);
+	  }
 
-  /** Step 7: 中文转拼音首字母（DeepSeek API） */
+	  /** Step 6a: 生成欢迎页背景图并保存到静态目录供下载 */
+	  async stepWelcomeImage(hotelName) {
+	    this._progress('welcome_img', '正在生成欢迎页背景图...');
+	    try {
+	      const imgBuffer = await generateWelcomeImage(hotelName);
+	      const filename = `welcome_${Date.now()}.png`;
+	      const publicPath = path.join(__dirname, 'public', filename);
+	      fs.writeFileSync(publicPath, imgBuffer);
+	      this.welcomeImageUrl = `/${filename}`;
+	      this._progress('welcome_img', `🖼️ 欢迎图已生成 (${(imgBuffer.length / 1024).toFixed(0)}KB) <a href="${this.welcomeImageUrl}" target="_blank">点击下载</a>`);
+	    } catch (err) {
+	      this._progress('welcome_img', `⚠️ 欢迎图生成失败: ${err.message}`);
+	    }
+	  }
+
+	  /** Step 6b: 生成Logo图并保存到静态目录供下载 */
+	  async stepLogoImage(hotelName) {
+	    this._progress('logo_img', '正在生成酒店Logo图...');
+	    try {
+	      const imgBuffer = await generateLogoImage(hotelName);
+	      const filename = `logo_${Date.now()}.png`;
+	      const publicPath = path.join(__dirname, 'public', filename);
+	      fs.writeFileSync(publicPath, imgBuffer);
+	      this.logoImageUrl = `/${filename}`;
+	      this._progress('logo_img', `✨ Logo已生成 (${(imgBuffer.length / 1024).toFixed(0)}KB) <a href="${this.logoImageUrl}" target="_blank">点击下载</a>`);
+	    } catch (err) {
+	      this._progress('logo_img', `⚠️ Logo生成失败: ${err.message}`);
+	    }
+	  }
+
+	  /** Step 7: 中文转拼音首字母（DeepSeek API） */
   async stepConvertPinyin(hotelName) {
     this._progress('pinyin', `正在将"${hotelName}"转换为拼音首字母...`);
 
