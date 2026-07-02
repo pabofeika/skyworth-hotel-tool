@@ -10,7 +10,15 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { EventEmitter } = require('events');
-const { generateWelcomeImage, generateLogoImage } = require('./lib/image-generator');
+// 图片生成可选加载（Vercel 原生库兼容问题）
+let generateWelcomeImage, generateLogoImage;
+try {
+  const gen = require('./lib/image-generator');
+  generateWelcomeImage = gen.generateWelcomeImage;
+  generateLogoImage = gen.generateLogoImage;
+} catch (e) {
+  console.warn('[warn] 图片生成模块加载失败，跳过图片功能:', e.message);
+}
 
 // ==================== 配置 ====================
 const CONFIG = {
@@ -555,8 +563,8 @@ class HotelWorkflowExecutor {
 	    const welcomeKey = `welcome_${Date.now()}`;
 	    const logoKey = `logo_${Date.now()}`;
 	    const pmsKey = `pms_${Date.now()}`;
-	    try { welcomeBuf = await generateWelcomeImage(hotelName); } catch (e) {}
-	    try { logoBuf = await generateLogoImage(hotelName); } catch (e) {}
+	    try { if (generateWelcomeImage) welcomeBuf = await generateWelcomeImage(hotelName); } catch (e) {}
+	    try { if (generateLogoImage) logoBuf = await generateLogoImage(hotelName); } catch (e) {}
 
 	    const url = `${this.config.hotelUrl}/v3/web/push/style`;
 
@@ -655,6 +663,7 @@ class HotelWorkflowExecutor {
 	  /** Step 6a: 保存欢迎图到本地供下载（上传已在上一步完成） */
 	  async stepWelcomeImage(hotelName) {
 	    try {
+	      if (!generateWelcomeImage) return;
 	      const imgBuffer = await generateWelcomeImage(hotelName);
 	      const filename = `welcome_${Date.now()}.jpeg`;
 	      const tmpDir = process.env.VERCEL || process.env.TCB_ENV ? '/tmp' : path.join(__dirname, 'public');
@@ -668,6 +677,7 @@ class HotelWorkflowExecutor {
 	  /** Step 6b: 保存Logo到本地供下载（上传已在上一步完成） */
 	  async stepLogoImage(hotelName) {
 	    try {
+	      if (!generateLogoImage) return;
 	      const imgBuffer = await generateLogoImage(hotelName);
 	      const filename = `logo_${Date.now()}.png`;
 	      const tmpDir = process.env.VERCEL || process.env.TCB_ENV ? '/tmp' : path.join(__dirname, 'public');
@@ -1119,8 +1129,8 @@ app.post('/api/upload-images', rateLimitMiddleware, async (req, res) => {
     const swCookie = switchRes.headers['set-cookie']?.[0] || cookie;
 
     // 生成图片
-    const welcomeBuf = await generateWelcomeImage(name);
-    const logoBuf = await generateLogoImage(name);
+    const welcomeBuf = generateWelcomeImage ? await generateWelcomeImage(name) : null;
+    const logoBuf = generateLogoImage ? await generateLogoImage(name) : null;
 
     // 构建上传 JSON（含图片组件）
     const styleData = {
