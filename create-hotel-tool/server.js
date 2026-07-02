@@ -11,7 +11,6 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { EventEmitter } = require('events');
 const { generateWelcomeImage, generateLogoImage } = require('./lib/image-generator');
-const sharp = require('sharp');
 
 // ==================== 配置 ====================
 const CONFIG = {
@@ -552,16 +551,12 @@ class HotelWorkflowExecutor {
 	    this._progress('welcome_msg', '正在更新欢迎词并上传图片...');
 
 	    // 预生成图片
-	    let welcomeBuf = null, logoBuf = null, pmsWebpBuf = null;
+	    let welcomeBuf = null, logoBuf = null;
 	    const welcomeKey = `welcome_${Date.now()}`;
 	    const logoKey = `logo_${Date.now()}`;
 	    const pmsKey = `pms_${Date.now()}`;
 	    try { welcomeBuf = await generateWelcomeImage(hotelName); } catch (e) {}
 	    try { logoBuf = await generateLogoImage(hotelName); } catch (e) {}
-	    // PMS 信息用 WebP 格式
-	    if (welcomeBuf) {
-	      try { pmsWebpBuf = await sharp(welcomeBuf).webp({ quality: 85 }).toBuffer(); } catch (e) {}
-	    }
 
 	    const url = `${this.config.hotelUrl}/v3/web/push/style`;
 
@@ -609,8 +604,8 @@ class HotelWorkflowExecutor {
 	      });
 	    }
 
-	    // PMS 信息（看电视段，WebP 格式）
-	    if (pmsWebpBuf) {
+	    // PMS 信息（复用欢迎图 PNG）
+	    if (welcomeBuf) {
 	      changedComponents.push({
 	        path: '看电视 / pms信息',
 	        name: 'HOME_GUIDE_1S_1',
@@ -639,7 +634,7 @@ class HotelWorkflowExecutor {
 	    form.append('paras', JSON.stringify(styleData));
 	    if (welcomeBuf) form.append('files', welcomeBuf, { filename: `${welcomeKey}.jpg`, contentType: 'image/jpeg' });
 	    if (logoBuf) form.append('files', logoBuf, { filename: `${logoKey}.png`, contentType: 'image/png' });
-	    if (pmsWebpBuf) form.append('files', pmsWebpBuf, { filename: `${pmsKey}.webp`, contentType: 'image/webp' });
+	    if (welcomeBuf) form.append('files', welcomeBuf, { filename: `${pmsKey}.png`, contentType: 'image/png' });
 	    if (logoBuf) form.append('files', logoBuf, { filename: `${logoKey}.png`, contentType: 'image/png' });
 
 	    const res = await http.post(url, form, {
@@ -650,7 +645,7 @@ class HotelWorkflowExecutor {
 	    if (res.data?.code === 10000) {
 	      if (welcomeBuf) this._progress('welcome_img', '🖼️ 欢迎图上传成功 ✅');
 	      if (logoBuf) this._progress('logo_img', '✨ Logo上传成功 ✅');
-	      if (pmsWebpBuf) this._progress('pms_img', '📺 PMS信息上传成功 ✅');
+	      if (welcomeBuf) this._progress('pms_img', '📺 PMS信息上传成功 ✅');
 	    } else {
 	      if (welcomeBuf) this._progress('welcome_img', `⚠️ 欢迎图上传失败: ${res.data?.msg}`);
 	      if (logoBuf) this._progress('logo_img', `⚠️ Logo上传失败: ${res.data?.msg}`);
