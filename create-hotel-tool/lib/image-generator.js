@@ -55,7 +55,7 @@ async function generateWelcomeImage(hotelName) {
   ctx.drawImage(bgImg, 0, 0, bgImg.width, bgImg.height);
 
   const name = hotelName || '酒店';
-  const text = `欢迎下榻${name}`.replace(/\{酒店\}/g, name);
+  const text = `欢迎您莅临${name}，我们已备好悉心的服务，愿您在此度过一段舒心惬意的美好时光。`;
 
   // 样式参数（与前端 hotel-welcome-generator.html 保持一致）
   const fontSize = 26;
