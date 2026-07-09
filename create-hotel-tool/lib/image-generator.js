@@ -1,18 +1,24 @@
 /**
  * 酒店图片生成模块
  * 服务端 Canvas 渲染：欢迎图 + Logo
+ * 注意：canvas 在 Vercel 可能不可用，每次调用时懒加载
  */
 
-const { createCanvas, loadImage, registerFont } = require('canvas');
 const path = require('path');
 
 const ASSETS_DIR = path.join(__dirname, '..', 'assets');
 const PMS_BG_PATH = path.join(ASSETS_DIR, 'pms-bg.png');
 const FONT_PATH = path.join(ASSETS_DIR, 'AlimamaShuHeiTi.ttf');
 
+let _canvas = null;
+function getCanvas() {
+  if (!_canvas) _canvas = require('canvas');
+  return _canvas;
+}
+
 // 注册阿里妈妈字体（Logo 用）
 try {
-  registerFont(FONT_PATH, { family: 'AlimamaLogo' });
+  getCanvas().registerFont(FONT_PATH, { family: 'AlimamaLogo' });
 } catch (e) {
   console.warn('[image-gen] 字体注册失败，Logo 将使用系统默认字体:', e.message);
 }
@@ -40,6 +46,7 @@ function wrapText(ctx, text, maxWidth) {
  * @returns {Promise<Buffer>} PNG Buffer
  */
 async function generateWelcomeImage(hotelName) {
+  const { createCanvas, loadImage } = getCanvas();
   const bgImg = await loadImage(PMS_BG_PATH);
   const canvas = createCanvas(bgImg.width, bgImg.height);
   const ctx = canvas.getContext('2d');
@@ -96,6 +103,7 @@ async function generateLogoImage(hotelName) {
   const height = 70;
 
   // 暂存 canvas 测量文字宽度
+  const { createCanvas } = getCanvas();
   const measureCanvas = createCanvas(1, 1);
   const measureCtx = measureCanvas.getContext('2d');
   measureCtx.font = `normal ${fontSize}px "AlimamaLogo","Alimama ShuHeiTi",sans-serif`;

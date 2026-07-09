@@ -637,17 +637,19 @@ class HotelWorkflowExecutor {
 	      },
 	    };
 
-	    const http = createHttpClient();
-	    const form = new FormData();
-	    form.append('paras', JSON.stringify(styleData));
-	    if (welcomeBuf) form.append('files', welcomeBuf, { filename: `${welcomeKey}.jpg`, contentType: 'image/jpeg' });
-	    if (logoBuf) form.append('files', logoBuf, { filename: `${logoKey}.png`, contentType: 'image/png' });
-	    if (welcomeBuf) form.append('files', welcomeBuf, { filename: `${pmsKey}.png`, contentType: 'image/png' });
-	    if (logoBuf) form.append('files', logoBuf, { filename: `${logoKey}.png`, contentType: 'image/png' });
+	    // 用原生 fetch + 原生 FormData + Blob（绕过 form-data npm 包，兼容 Vercel）
+	    const nativeForm = new globalThis.FormData();
+	    nativeForm.append('paras', JSON.stringify(styleData));
+	    if (welcomeBuf) nativeForm.append('files', new Blob([new Uint8Array(welcomeBuf)], { type: 'image/jpeg' }), `${welcomeKey}.jpg`);
+	    if (logoBuf) nativeForm.append('files', new Blob([new Uint8Array(logoBuf)], { type: 'image/png' }), `${logoKey}.png`);
+	    if (welcomeBuf) nativeForm.append('files', new Blob([new Uint8Array(welcomeBuf)], { type: 'image/png' }), `${pmsKey}.png`);
 
-	    const res = await http.post(url, form, {
-	      headers: { ...form.getHeaders(), Cookie: this.cookies.switch },
+	    const fetchRes = await fetch(url, {
+	      method: 'POST',
+	      headers: { Cookie: this.cookies.switch },
+	      body: nativeForm,
 	    });
+	    const res = { data: await fetchRes.json() };
 
 	    this._progress('welcome_msg', `推送结果: ${JSON.stringify(res.data)}`);
 	    if (res.data?.code === 10000) {
