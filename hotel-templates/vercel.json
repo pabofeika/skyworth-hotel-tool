@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "functions": {
+    "api/verify.js": {
+      "memory": 128,
+      "maxDuration": 10
+    }
+  },
+  "routes": [
+    { "src": "/api/verify", "dest": "/api/verify.js" },
+    { "src": "/(.*)", "dest": "/public/$1" }
+  ]
+}

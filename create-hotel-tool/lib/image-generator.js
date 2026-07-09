@@ -62,7 +62,7 @@ async function generateWelcomeImage(hotelName) {
   const lineHeight = 40;
   const color = '#ffffff';
   const shadowColor = '#000000';
-  const posRatioX = 0.5;   // 50%
+  const posRatioX = 0.08;  // 左对齐 8% 左边距
   const posRatioY = 0.3;   // 30%
   const maxWidthRatio = 0.9; // 90%
 
@@ -72,7 +72,7 @@ async function generateWelcomeImage(hotelName) {
 
   ctx.font = `normal ${fontSize}px "Source Han Sans","Noto Sans SC","PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif`;
   ctx.fillStyle = color;
-  ctx.textAlign = 'center';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.shadowColor = shadowColor;
   ctx.shadowBlur = 8;
