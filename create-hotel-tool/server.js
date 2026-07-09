@@ -554,13 +554,11 @@ class HotelWorkflowExecutor {
     this._progress('copy_template', `模板复制结果: ${JSON.stringify(res.data)}`);
   }
 
-	  /** Step 6: 更新欢迎词 + 上传欢迎图/Logo */
+	  /** Step 6: 更新欢迎词 + 上传欢迎图/Logo/PMS（对齐浏览器真实请求格式） */
 	  async stepUpdateWelcome(hotelName) {
 	    this._progress('welcome_msg', '正在更新欢迎词并上传图片...');
 
-	    // 预生成图片
 	    let welcomeBuf = null, logoBuf = null;
-	    const welcomeKey = `welcome_${Date.now()}`;
 	    const logoKey = `logo_${Date.now()}`;
 	    const pmsKey = `pms_${Date.now()}`;
 	    try { if (generateWelcomeImage) welcomeBuf = await generateWelcomeImage(hotelName); } catch (e) {}
@@ -568,97 +566,60 @@ class HotelWorkflowExecutor {
 
 	    const url = `${this.config.hotelUrl}/v3/web/push/style`;
 
-	    // changed_components 格式（对齐录制的真实请求）
-	    const changedComponents = [
-	      // 欢迎词（文本）
-	      {
-	        path: '欢迎页 / 欢迎词',
-	        name: 'WELCOME_TEXT',
-	        push_mode: 0, onOrOff: 1,
-	        component_infos: [
-	          { type: 4, value: `欢迎下榻${hotelName}` },
-	          { type: 0, value: '1' },
-	        ],
-	      },
-	      // 语音播报（文本）
-	      {
-	        path: '欢迎页 / 语音播报',
-	        name: 'WELCOME_VOICE_BROADCAST',
-	        push_mode: 0, onOrOff: 1,
-	        component_infos: [{
-	          type: 4,
-	          value: `欢迎下榻${hotelName}，我是您的AI客房管家小维。\n无论是调节空调温度、点亮温馨灯光，还是轻启窗帘迎接晨光，您只需轻声唤我："小维小维，打开空调"或"小维小维，打开灯光"，祝您入住愉快！`,
-	        }],
-	      },
-	    ];
-
-	    // 欢迎页背景图
-	    if (welcomeBuf) {
-	      changedComponents.push({
-	        path: '欢迎页 / 欢迎页背景',
-	        name: 'WELCOME_BG_IMAGE',
-	        push_mode: 0, onOrOff: 1,
-	        component_infos: [{ type: 1, key: welcomeKey }],
-	      });
-	    }
-
-	    // 主页 Logo
-	    if (logoBuf) {
-	      changedComponents.push({
-	        path: '主页 / 主页LOGO',
-	        name: 'HOME_LOGO',
-	        push_mode: 0, onOrOff: 1,
-	        component_infos: [{ type: 1, key: logoKey }],
-	      });
-	    }
-
-	    // PMS 信息（复用欢迎图 PNG）
-	    if (welcomeBuf) {
-	      changedComponents.push({
-	        path: '看电视 / pms信息',
-	        name: 'HOME_GUIDE_1S_1',
-	        push_mode: 0, onOrOff: 1,
-	        component_infos: [{ type: 1, key: pmsKey }],
-	      });
-	    }
-
+	    // container_infos 递归树（对齐浏览器真实请求，非 changed_components）
 	    const styleData = {
 	      style_name: '创维标准样式（语音版）',
 	      push_name: '1',
-	      plan_detail: { plan_type: 0 },
-	      goals: [
-	        { hid: this.hotelId, room_nums: ['000'] },
-	        { hid: this.hotelId, room_nums: ['----'] },
-	      ],
 	      root: {
-	        name: 'ROOT',
-	        title: '标准版',
-	        changed_components: changedComponents,
+	        name: 'ROOT', type: 0, title: '标准版', child_type: 0, desc: '酒店通用样式001',
+	        container_infos: [
+	          { type: 1, name: 'WELCOME', title: '欢迎页', child_type: 0, desc: '包含欢迎页相关信息',
+	            container_infos: [
+	              { type: 2, name: 'WELCOME_TEXT', title: '欢迎词',
+	                component_infos: [{ type: 4, value: `欢迎下榻${hotelName}` }],
+	                onOrOff: 1, child_type: 1, desc: '设置欢迎词', container_infos: [],
+	                expand_info: { sup_types: [4,0], max_elem: '3', en_title: 'welcome text', ext_s: [] } },
+	              { type: 2, name: 'WELCOME_VOICE_BROADCAST', title: '语音播报', push_mode: 0, onOrOff: 1,
+	                component_infos: [{ type: 4, value: `欢迎下榻${hotelName}，我是您的AI客房管家小维。\n无论是调节空调温度、点亮温馨灯光，还是轻启窗帘迎接晨光，您只需轻声唤我："小维小维，打开空调"或"小维小维，打开灯光"，祝您入住愉快！` }],
+	                child_type: 1, desc: '语音播报', container_infos: [],
+	                expand_info: { sup_types: [4], ext_s: [], max_elem: 1 } },
+	            ] },
+	          logoBuf ? { type: 1, name: 'HOME', title: '主页', child_type: 0, desc: '包含主页相关信息',
+	            container_infos: [
+	              { type: 2, name: 'HOME_LOGO', title: '主页LOGO', push_mode: 0, onOrOff: 1,
+	                component_infos: [{ type: 1, key: logoKey }],
+	                child_type: 1, desc: '设置主页LOGO信息', container_infos: [],
+	                expand_info: { sup_types: [1], en_title: 'home logo', ext_s: [], max_elem: 1 } },
+	            ] } : null,
+	          welcomeBuf ? { type: 1, name: 'HOME_GUIDE_1S', title: '看电视', child_type: 0, desc: '看电视',
+	            container_infos: [
+	              { type: 2, name: 'HOME_GUIDE_1S_1', title: 'pms信息', push_mode: 0, onOrOff: 1,
+	                component_infos: [{ type: 1, key: pmsKey }],
+	                child_type: 1, desc: 'pms信息', container_infos: [],
+	                expand_info: { sup_types: [1,3], ext_s: [], jump_name: '', max_elem: '1', jump_type: 1, en_title: 1, sub_title: 1, en_sub_title: 1, icon: 1, focus_icon: 1, focus_bg_icon: 1, bg_icon: 1, focus_bg_color: 1, bg_color: 1, tar_type_mark: 1 } },
+	            ] } : null,
+	        ].filter(Boolean),
 	      },
+	      plan_detail: { plan_type: 0 },
+	      goals: [{ hid: this.hotelId, room_nums: ['000'] }],
 	    };
 
-	    // 用原生 fetch + 原生 FormData + Blob（绕过 form-data npm 包，兼容 Vercel）
-	    const nativeForm = new globalThis.FormData();
-	    nativeForm.append('paras', JSON.stringify(styleData));
-	    if (welcomeBuf) nativeForm.append('files', new Blob([new Uint8Array(welcomeBuf)], { type: 'image/jpeg' }), `${welcomeKey}.jpg`);
-	    if (logoBuf) nativeForm.append('files', new Blob([new Uint8Array(logoBuf)], { type: 'image/png' }), `${logoKey}.png`);
-	    if (welcomeBuf) nativeForm.append('files', new Blob([new Uint8Array(welcomeBuf)], { type: 'image/png' }), `${pmsKey}.png`);
+	    // 原生 fetch + FormData（兼容 Vercel，与浏览器 multipart 一致）
+	    const form = new globalThis.FormData();
+	    form.append('paras', JSON.stringify(styleData));
+	    if (logoBuf) form.append('files', new Blob([new Uint8Array(logoBuf)], { type: 'image/png' }), `${logoKey}.png`);
+	    if (welcomeBuf) form.append('files', new Blob([new Uint8Array(welcomeBuf)], { type: 'image/png' }), `${pmsKey}.png`);
 
-	    const fetchRes = await fetch(url, {
-	      method: 'POST',
-	      headers: { Cookie: this.cookies.switch },
-	      body: nativeForm,
-	    });
+	    const fetchRes = await fetch(url, { method: 'POST', headers: { Cookie: this.cookies.switch }, body: form });
 	    const res = { data: await fetchRes.json() };
 
 	    this._progress('welcome_msg', `推送结果: ${JSON.stringify(res.data)}`);
 	    if (res.data?.code === 10000) {
-	      if (welcomeBuf) this._progress('welcome_img', '🖼️ 欢迎图上传成功 ✅');
 	      if (logoBuf) this._progress('logo_img', '✨ Logo上传成功 ✅');
 	      if (welcomeBuf) this._progress('pms_img', '📺 PMS信息上传成功 ✅');
 	    } else {
-	      if (welcomeBuf) this._progress('welcome_img', `⚠️ 欢迎图上传失败: ${res.data?.msg}`);
 	      if (logoBuf) this._progress('logo_img', `⚠️ Logo上传失败: ${res.data?.msg}`);
+	      if (welcomeBuf) this._progress('pms_img', `⚠️ PMS上传失败: ${res.data?.msg}`);
 	    }
 	  }
 
