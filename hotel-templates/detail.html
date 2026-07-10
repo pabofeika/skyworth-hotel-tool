@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模板详情 - 酒店模板展示站</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { background: #0f172a; color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; }
+
+  .detail-header {
+    display: flex; align-items: center; gap: 16px; padding: 12px 20px;
+    background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(10px); z-index: 100; flex-shrink: 0;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; color: #94a3b8; padding: 8px 14px; font-size: 13px;
+    cursor: pointer; font-family: var(--font); transition: all var(--transition);
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+  .detail-header h2 { font-size: 16px; font-weight: 600; flex: 1; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  .toggle-annotations {
+    display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94a3b8;
+    cursor: pointer; user-select: none;
+  }
+  .toggle-annotations input { display: none; }
+  .toggle-track {
+    width: 36px; height: 20px; background: #475569; border-radius: 10px;
+    position: relative; transition: background var(--transition);
+  }
+  .toggle-track::after {
+    content: ''; position: absolute; width: 16px; height: 16px;
+    background: #fff; border-radius: 50%; top: 2px; left: 2px;
+    transition: transform var(--transition);
+  }
+  .toggle-annotations input:checked + .toggle-track { background: var(--primary); }
+  .toggle-annotations input:checked + .toggle-track::after { transform: translateX(16px); }
+
+  /* 子模块标签栏 */
+  .section-tabs {
+    display: flex; gap: 0; overflow-x: auto;
+    background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 0 16px; flex-shrink: 0;
+  }
+  .section-tab {
+    padding: 10px 18px; font-size: 13px; color: #64748b; cursor: pointer;
+    border: none; background: none; border-bottom: 2px solid transparent;
+    font-family: var(--font); white-space: nowrap; transition: all var(--transition);
+  }
+  .section-tab:hover { color: #94a3b8; }
+  .section-tab.active { color: var(--primary-light); border-bottom-color: var(--primary); font-weight: 500; }
+
+  .detail-body { flex: 1; display: flex; overflow: hidden; }
+
+  /* 图片预览区 */
+  .preview-area {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; position: relative; padding: 24px; background: #000;
+  }
+  .image-container { position: relative; max-width: 100%; max-height: 100%; display: flex; align-items: center; justify-content: center; }
+  .image-container img { max-width: 100%; max-height: 60vh; object-fit: contain; border-radius: 4px; }
+
+  .annotation-layer { position: absolute; inset: 0; pointer-events: none; display: none; }
+  .annotation-layer.visible { display: block; }
+  .annotation-box {
+    position: absolute; border: 2px dashed var(--accent);
+    background: rgba(245,158,11,0.08); transition: all var(--transition);
+  }
+  .annotation-label {
+    position: absolute; top: -24px; left: -2px;
+    background: var(--accent); color: #000; font-size: 11px;
+    font-weight: 600; padding: 3px 10px; border-radius: 4px;
+    white-space: nowrap; pointer-events: none;
+  }
+
+  .carousel-dots { display: flex; gap: 8px; margin-top: 12px; }
+  .carousel-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.2); border: none; cursor: pointer;
+    transition: all var(--transition);
+  }
+  .carousel-dot.active { background: var(--primary); width: 24px; border-radius: 4px; }
+  .carousel-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+    color: #fff; font-size: 18px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; transition: all var(--transition); z-index: 10;
+  }
+  .carousel-nav:hover { background: rgba(255,255,255,0.2); }
+  .carousel-nav.prev { left: 16px; }
+  .carousel-nav.next { right: 16px; }
+
+  .screen-counter {
+    font-size: 11px; color: #64748b; margin-top: 8px; text-align: center;
+  }
+
+  /* 右侧信息栏 */
+  .info-panel {
+    width: 300px; min-width: 300px;
+    background: rgba(255,255,255,0.03); border-left: 1px solid rgba(255,255,255,0.06);
+    padding: 24px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px;
+  }
+  .info-section h5 {
+    font-size: 11px; font-weight: 600; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;
+  }
+  .info-section .desc-text { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+  .info-tag {
+    padding: 4px 10px; background: rgba(79,70,229,0.15); color: #818cf8;
+    border-radius: 6px; font-size: 12px; font-weight: 500;
+  }
+  .editable-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .editable-list li {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; background: rgba(245,158,11,0.06);
+    border-radius: 8px; font-size: 13px; color: #e2e8f0;
+  }
+  .material-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .material-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 10px;
+    cursor: pointer; transition: all var(--transition);
+    color: #e2e8f0; font-size: 13px;
+  }
+  .material-item:hover { background: rgba(255,255,255,0.08); border-color: var(--primary); }
+
+  @media (max-width: 768px) {
+    .detail-body { flex-direction: column; }
+    .info-panel { width: 100%; min-width: unset; border-left: none; border-top: 1px solid rgba(255,255,255,0.06); }
+  }
+</style>
+</head>
+<body>
+
+<script>
+if (!sessionStorage.getItem('hotel_template_token')) { window.location.href = 'index.html'; }
+</script>
+
+<header class="detail-header">
+  <button class="back-btn" onclick="window.close();history.back();">← 返回</button>
+  <h2 id="detailTitle">模板详情</h2>
+  <div class="header-actions">
+    <label class="toggle-annotations" title="显示/隐藏可编辑区域标注">
+      <input type="checkbox" id="showAnnotations" checked>
+      <span class="toggle-track"></span>
+      <span>标注</span>
+    </label>
+  </div>
+</header>
+
+<!-- 子模块标签栏 -->
+<nav class="section-tabs" id="sectionTabs"></nav>
+
+<div class="detail-body">
+  <div class="preview-area" id="previewArea">
+    <button class="carousel-nav prev" id="prevBtn" style="display:none">◀</button>
+    <div class="image-container" id="imageContainer">
+      <img id="mainImage" src="" alt="模板截图" style="display:none">
+      <div class="annotation-layer" id="annotationLayer"></div>
+    </div>
+    <button class="carousel-nav next" id="nextBtn" style="display:none">▶</button>
+    <div class="carousel-dots" id="carouselDots"></div>
+    <div class="screen-counter" id="screenCounter"></div>
+  </div>
+
+  <aside class="info-panel" id="infoPanel"></aside>
+</div>
+
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const templateId = urlParams.get('template');
+let template = null;
+let currentSectionIdx = 0;
+let currentScreenIdx = 0;
+let sectionsData = [];
+
+async function loadTemplate() {
+  if (!templateId) { showEmpty('缺少模板 ID 参数'); return; }
+  try {
+    const res = await fetch('data/templates.json');
+    const data = await res.json();
+    template = data.templates.find(t => t.id === templateId);
+    if (!template) { showEmpty('未找到该模板'); return; }
+
+    // 构建 sections 数据（兼容旧版平铺格式）
+    if (template.sections && template.sections.length > 0) {
+      sectionsData = template.sections;
+    } else if (template.screenshots && template.screenshots.length > 0) {
+      sectionsData = [{
+        name: template.name,
+        screenshots: template.screenshots,
+        editableAreas: template.editableAreas || []
+      }];
+    } else {
+      showEmpty('模板无截图数据');
+      return;
+    }
+
+    render();
+  } catch (err) {
+    showEmpty('加载模板数据失败: ' + err.message);
+  }
+}
+
+function showEmpty(msg) {
+  document.getElementById('detailTitle').textContent = msg;
+}
+
+function render() {
+  document.getElementById('detailTitle').textContent = template.name;
+
+  // 渲染子模块标签
+  const tabsEl = document.getElementById('sectionTabs');
+  tabsEl.innerHTML = sectionsData.map((s, i) =>
+    `<button class="section-tab ${i === 0 ? 'active' : ''}" data-index="${i}">${s.name} (${s.screenshots.length})</button>`
+  ).join('');
+
+  tabsEl.querySelectorAll('.section-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      currentSectionIdx = parseInt(tab.dataset.index);
+      currentScreenIdx = 0;
+      switchSection();
+      // 更新 active
+      tabsEl.querySelectorAll('.section-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
+
+  // 渲染首个子模块
+  switchSection();
+  renderInfoPanel();
+}
+
+function switchSection() {
+  const section = sectionsData[currentSectionIdx];
+  if (!section) return;
+
+  const screenshots = section.screenshots;
+  const current = screenshots[currentScreenIdx] || screenshots[0];
+  // 兼容新旧格式：新格式为对象{file,label,editableAreas}，旧格式为字符串
+  const file = typeof current === 'string' ? current : current.file;
+  const areas = typeof current === 'string' ? [] : (current.editableAreas || []);
+
+  // 更新主图
+  document.getElementById('mainImage').style.display = '';
+  document.getElementById('mainImage').src = file;
+
+  // 轮播导航
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  if (screenshots.length > 1) {
+    prevBtn.style.display = 'flex';
+    nextBtn.style.display = 'flex';
+  } else {
+    prevBtn.style.display = 'none';
+    nextBtn.style.display = 'none';
+  }
+
+  // 指示点
+  renderDots(screenshots);
+
+  // 标注
+  renderAnnotations(areas);
+
+  // 计数器
+  document.getElementById('screenCounter').textContent =
+    screenshots.length > 1 ? `${currentScreenIdx + 1} / ${screenshots.length}` : '';
+
+  // 更新信息面板中的可编辑区域
+  updateInfoEditableAreas(section, current);
+}
+
+function renderDots(screenshots) {
+  const container = document.getElementById('carouselDots');
+  container.innerHTML = screenshots.map((_, i) =>
+    `<button class="carousel-dot ${i === currentScreenIdx ? 'active' : ''}" data-index="${i}"></button>`
+  ).join('');
+  container.querySelectorAll('.carousel-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      currentScreenIdx = parseInt(dot.dataset.index);
+      switchSection();
+    });
+  });
+}
+
+function showScreen(index) {
+  const section = sectionsData[currentSectionIdx];
+  if (!section) return;
+  const screenshots = section.screenshots;
+  if (index < 0 || index >= screenshots.length) return;
+  currentScreenIdx = index;
+  switchSection();
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => showScreen(currentScreenIdx - 1));
+document.getElementById('nextBtn').addEventListener('click', () => showScreen(currentScreenIdx + 1));
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') showScreen(currentScreenIdx - 1);
+  if (e.key === 'ArrowRight') showScreen(currentScreenIdx + 1);
+  if (e.key === 'Escape') { window.close(); history.back(); }
+});
+
+function renderAnnotations(areas) {
+  const layer = document.getElementById('annotationLayer');
+  const show = document.getElementById('showAnnotations').checked;
+  layer.className = 'annotation-layer' + (show ? ' visible' : '');
+
+  if (!areas.length) { layer.innerHTML = ''; return; }
+  layer.innerHTML = areas.map(a => `
+    <div class="annotation-box" style="left:${a.x}%;top:${a.y}%;width:${a.w}%;height:${a.h}%;">
+      <span class="annotation-label">${a.label}</span>
+    </div>
+  `).join('');
+}
+
+document.getElementById('showAnnotations').addEventListener('change', function() {
+  const layer = document.getElementById('annotationLayer');
+  layer.classList.toggle('visible', this.checked);
+});
+
+function renderInfoPanel() {
+  const panel = document.getElementById('infoPanel');
+  const materials = template.downloadMaterials || [];
+  const totalScreens = sectionsData.reduce((sum, s) => sum + s.screenshots.length, 0);
+
+  panel.innerHTML = `
+    <div class="info-section">
+      <h5>模板信息</h5>
+      <p class="desc-text">${template.description || '暂无描述'}</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+        <span class="info-tag">📁 ${template.category || '未分类'}</span>
+        <span class="info-tag">📐 ${totalScreens} 张截图</span>
+        <span class="info-tag">📂 ${sectionsData.length} 个子模块</span>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <h5>子模块导航</h5>
+      <ul class="editable-list">
+        ${sectionsData.map((s, i) => `
+          <li style="cursor:pointer" onclick="document.querySelectorAll('.section-tab')[${i}].click()">
+            <span>📄</span> ${s.name} (${s.screenshots.length}张)
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+
+    <div class="info-section" id="infoEditableAreas">
+      <h5>可编辑区域</h5>
+      <p style="font-size:13px;color:#64748b;">点击上方子模块查看对应标注</p>
+    </div>
+
+    <div class="info-section">
+      <h5>下载素材 (${materials.length})</h5>
+      ${materials.length > 0 ? `
+        <ul class="material-list">
+          ${materials.map(m => `
+            <li class="material-item" onclick="downloadMaterial('${m.file}', '${m.name}')">
+              <span>📦</span> ${m.name}
+            </li>
+          `).join('')}
+        </ul>
+      ` : '<p style="font-size:13px;color:#64748b;">暂无素材可下载</p>'}
+    </div>
+  `;
+}
+
+function updateInfoEditableAreas(section, currentScreenshot) {
+  const el = document.getElementById('infoEditableAreas');
+  if (!el) return;
+  const areas = typeof currentScreenshot === 'string' ? [] : (currentScreenshot.editableAreas || []);
+  const label = typeof currentScreenshot === 'string' ? '' : (currentScreenshot.label || '');
+  const title = label ? `${section.name} — ${label}` : section.name;
+  el.innerHTML = `
+    <h5>${title} — 可编辑区域 (${areas.length})</h5>
+    ${areas.length > 0 ? `
+      <ul class="editable-list">
+        ${areas.map(a => `<li>
+          <div style="flex:1">
+            <div style="font-weight:500;margin-bottom:2px">✏️ ${a.label}</div>
+            ${a.desc ? `<div style="font-size:11px;color:#94a3b8;line-height:1.4">${a.desc}</div>` : ''}
+          </div>
+        </li>`).join('')}
+      </ul>
+      <p style="font-size:11px;color:#64748b;margin-top:8px;">💡 虚线框标注了设计稿中可修改的区域</p>
+    ` : '<p style="font-size:13px;color:#64748b;">该页面暂无标注信息</p>'}
+  `;
+}
+
+function downloadMaterial(filePath, name) {
+  const a = document.createElement('a');
+  a.href = filePath;
+  a.download = filePath.split('/').pop() || name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+loadTemplate();
+</script>
+</body>
+</html>

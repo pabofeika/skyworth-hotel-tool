@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模板管理 - 酒店模板展示站</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { background: #f1f5f9; padding: 24px; }
+  .admin-container { max-width: 1200px; margin: 0 auto; }
+  .admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .admin-header h1 { font-size: 24px; font-weight: 700; }
+  .admin-header .actions { display: flex; gap: 8px; }
+
+  /* 模板列表 */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  th { background: #f8fafc; font-weight: 600; color: var(--text-light); font-size: 12px; text-transform: uppercase; }
+  tr:hover td { background: #f8fafc; }
+  .thumb-mini { width: 60px; height: 38px; object-fit: cover; border-radius: 4px; background: #e2e8f0; }
+
+  /* 模态框 */
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 16px;
+    overflow-y: auto;
+    backdrop-filter: blur(2px);
+  }
+  .modal.active { display: flex; }
+  .modal-card {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    width: 700px;
+    max-width: 100%;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-header h3 { font-size: 16px; font-weight: 600; }
+  .modal-close {
+    width: 32px; height: 32px;
+    border-radius: 8px; border: none;
+    background: var(--bg); color: var(--text-light);
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: var(--error); color: #fff; }
+  .modal-body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  .modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+
+  /* 表单 */
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .form-group .hint { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* 标注编辑器 */
+  .annotation-editor {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .annotation-list {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 8px;
+  }
+  .annotation-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    background: #f8fafc;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .annotation-item input {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    width: 60px;
+    font-family: var(--font);
+  }
+  .annotation-item input.label-input { width: 120px; }
+  .annotation-add {
+    padding: 8px;
+    text-align: center;
+  }
+  .annotation-add .btn { width: 100%; }
+
+  /* 上传文件区 */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: all var(--transition);
+    font-size: 13px;
+  }
+  .upload-zone:hover { border-color: var(--primary); background: rgba(79,70,229,0.02); }
+  .upload-zone .icon { font-size: 32px; margin-bottom: 8px; }
+
+  /* 文件列表 */
+  .file-list { margin-top: 12px; }
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f8fafc;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+  .file-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-item .remove-btn {
+    background: none; border: none;
+    color: var(--error); cursor: pointer;
+    font-size: 16px; padding: 2px 6px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    z-index: 2000;
+    animation: fadeIn 0.3s ease;
+    display: none;
+  }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--error); }
+
+  /* 导出面板 */
+  .export-panel {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 12px 24px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    z-index: 500;
+  }
+  .export-panel .btn { padding: 6px 14px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="admin-container">
+  <div class="admin-header">
+    <div>
+      <h1>🛠️ 模板管理</h1>
+      <p style="color:var(--text-light);font-size:13px;margin-top:4px;">本地管理页 — 编辑完成后导出 JSON 并部署</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="loadFromFile()">📂 导入 JSON</button>
+      <button class="btn btn-primary" onclick="exportJSON()">📤 导出 JSON</button>
+    </div>
+  </div>
+
+  <!-- 模板列表 -->
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3 style="font-size:15px;">模板列表 (<span id="templateCount">0</span>)</h3>
+      <button class="btn btn-primary btn-sm" onclick="openEditor()">+ 新增模板</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:80px">缩略图</th>
+            <th>名称</th>
+            <th>分类</th>
+            <th>截图数</th>
+            <th>标注区域</th>
+            <th>素材</th>
+            <th style="width:120px">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:40px;">
+            暂无模板，点击「+ 新增模板」开始添加
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p style="font-size:12px;color:var(--text-light);margin-top:8px;">
+    💡 提示：本页面仅用于本地编辑模板数据。编辑完成后，点击「导出 JSON」下载文件，替换 <code>public/data/templates.json</code>，然后 git push 部署。
+  </p>
+</div>
+
+<!-- 编辑模态框 -->
+<div class="modal" id="editorModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="editorTitle">新增模板</h3>
+      <button class="modal-close" onclick="closeEditor()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="editorForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>模板 ID</label>
+            <input class="input" type="text" id="tmpId" placeholder="自动生成" readonly>
+            <span class="hint">唯一标识，新增时自动生成</span>
+          </div>
+          <div class="form-group">
+            <label>模板名称 *</label>
+            <input class="input" type="text" id="tmpName" placeholder="如：酒店欢迎页 - 标准版" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>分类</label>
+            <input class="input" type="text" id="tmpCategory" placeholder="如：欢迎页、点餐页、设置页">
+          </div>
+          <div class="form-group">
+            <label>缩略图路径</label>
+            <input class="input" type="text" id="tmpThumb" placeholder="assets/templates/xxx/thumb.png">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>描述</label>
+          <textarea class="input" id="tmpDesc" rows="3" placeholder="简要描述模板的用途和特点"></textarea>
+        </div>
+
+        <!-- 截图列表 -->
+        <div class="form-group">
+          <label>截图列表</label>
+          <div class="file-list" id="screenshotList"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <input class="input" type="text" id="newScreenshot" placeholder="输入截图路径" style="flex:1">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addScreenshot()">+ 添加</button>
+          </div>
+          <span class="hint">截图用于详情页轮播展示，第一张为默认显示</span>
+        </div>
+
+        <!-- 可编辑区域标注 -->
+        <div class="form-group">
+          <label>可编辑区域标注</label>
+          <div class="annotation-editor">
+            <div class="annotation-list" id="annotationList"></div>
+            <div class="annotation-add">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="addAnnotation()">+ 添加标注区域</button>
+            </div>
+          </div>
+          <span class="hint">x/y/w/h 为相对截图的百分比位置（0-100），在详情页显示虚线标注框</span>
+        </div>
+
+        <!-- 下载素材 -->
+        <div class="form-group">
+          <label>下载素材列表</label>
+          <div class="file-list" id="materialList"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <input class="input" type="text" id="newMatName" placeholder="素材名称（如 PSD源文件）" style="flex:1">
+            <input class="input" type="text" id="newMatFile" placeholder="文件路径" style="flex:1">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addMaterial()">+ 添加</button>
+          </div>
+        </div>
+
+        <input type="hidden" id="tmpEditIndex" value="-1">
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeEditor()">取消</button>
+      <button class="btn btn-primary" onclick="saveTemplate()">💾 保存模板</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ 数据管理 ============
+let templates = [];
+
+// 初始化：尝试从文件系统加载
+function init() {
+  // 先尝试从 fetch 加载现有的 templates.json
+  fetch('data/templates.json')
+    .then(res => res.json())
+    .then(data => {
+      templates = data.templates || [];
+      renderTable();
+    })
+    .catch(() => {
+      // 如果本地打开页面，可能跨域，用 localStorage 作后备
+      const saved = localStorage.getItem('admin_templates');
+      if (saved) {
+        try { templates = JSON.parse(saved); } catch {}
+      }
+      renderTable();
+    });
+}
+
+// ============ 渲染表格 ============
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  document.getElementById('templateCount').textContent = templates.length;
+
+  if (templates.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:40px;">暂无模板，点击「+ 新增模板」开始添加</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = templates.map((t, i) => `
+    <tr>
+      <td>
+        ${t.thumbnail
+          ? `<img class="thumb-mini" src="${t.thumbnail}" alt="" onerror="this.style.display='none'">`
+          : '<span style="color:var(--text-light);font-size:12px;">无</span>'}
+      </td>
+      <td><strong>${escapeHtml(t.name)}</strong></td>
+      <td>${escapeHtml(t.category || '—')}</td>
+      <td>${t.screenshots?.length || 0}</td>
+      <td>${t.editableAreas?.length || 0}</td>
+      <td>${t.downloadMaterials?.length || 0}</td>
+      <td>
+        <button class="btn btn-sm btn-secondary" onclick="editTemplate(${i})" style="margin-right:4px;">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteTemplate(${i})">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ============ 编辑器 ============
+let editingIndex = -1;
+let editScreenshots = [];
+let editAnnotations = [];
+let editMaterials = [];
+
+function openEditor(index = -1) {
+  editingIndex = index;
+  const isNew = index === -1;
+
+  document.getElementById('editorTitle').textContent = isNew ? '新增模板' : '编辑模板';
+  document.getElementById('editorModal').classList.add('active');
+
+  if (isNew) {
+    document.getElementById('tmpId').value = 'template-' + Date.now();
+    document.getElementById('tmpName').value = '';
+    document.getElementById('tmpCategory').value = '';
+    document.getElementById('tmpThumb').value = '';
+    document.getElementById('tmpDesc').value = '';
+    document.getElementById('tmpEditIndex').value = '-1';
+    editScreenshots = [];
+    editAnnotations = [];
+    editMaterials = [];
+  } else {
+    const t = templates[index];
+    document.getElementById('tmpId').value = t.id || '';
+    document.getElementById('tmpName').value = t.name || '';
+    document.getElementById('tmpCategory').value = t.category || '';
+    document.getElementById('tmpThumb').value = t.thumbnail || '';
+    document.getElementById('tmpDesc').value = t.description || '';
+    document.getElementById('tmpEditIndex').value = index;
+    editScreenshots = [...(t.screenshots || [])];
+    editAnnotations = (t.editableAreas || []).map(a => ({...a}));
+    editMaterials = (t.downloadMaterials || []).map(m => ({...m}));
+  }
+
+  renderScreenshots();
+  renderAnnotations();
+  renderMaterials();
+}
+
+function closeEditor() {
+  document.getElementById('editorModal').classList.remove('active');
+  editingIndex = -1;
+}
+
+// ============ 截图管理 ============
+function renderScreenshots() {
+  const container = document.getElementById('screenshotList');
+  container.innerHTML = editScreenshots.map((s, i) => `
+    <div class="file-item">
+      <span>🖼️</span>
+      <span class="name">${escapeHtml(s)}</span>
+      <button type="button" class="remove-btn" onclick="removeScreenshot(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function addScreenshot() {
+  const input = document.getElementById('newScreenshot');
+  const val = input.value.trim();
+  if (!val) return;
+  editScreenshots.push(val);
+  input.value = '';
+  renderScreenshots();
+}
+
+function removeScreenshot(index) {
+  editScreenshots.splice(index, 1);
+  renderScreenshots();
+}
+
+// ============ 标注管理 ============
+function renderAnnotations() {
+  const container = document.getElementById('annotationList');
+  container.innerHTML = editAnnotations.map((a, i) => `
+    <div class="annotation-item">
+      <span>✏️</span>
+      <input class="label-input" value="${escapeHtml(a.label)}" placeholder="区域名称" onchange="editAnnotations[${i}].label=this.value">
+      <span style="font-size:11px;color:var(--text-light)">x:</span>
+      <input type="number" value="${a.x}" min="0" max="100" onchange="editAnnotations[${i}].x=parseFloat(this.value)">
+      <span style="font-size:11px;color:var(--text-light)">y:</span>
+      <input type="number" value="${a.y}" min="0" max="100" onchange="editAnnotations[${i}].y=parseFloat(this.value)">
+      <span style="font-size:11px;color:var(--text-light)">w:</span>
+      <input type="number" value="${a.w}" min="0" max="100" onchange="editAnnotations[${i}].w=parseFloat(this.value)">
+      <span style="font-size:11px;color:var(--text-light)">h:</span>
+      <input type="number" value="${a.h}" min="0" max="100" onchange="editAnnotations[${i}].h=parseFloat(this.value)">
+      <button type="button" class="remove-btn" onclick="removeAnnotation(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function addAnnotation() {
+  editAnnotations.push({ label: '新区域', x: 10, y: 10, w: 30, h: 15 });
+  renderAnnotations();
+}
+
+function removeAnnotation(index) {
+  editAnnotations.splice(index, 1);
+  renderAnnotations();
+}
+
+// ============ 素材管理 ============
+function renderMaterials() {
+  const container = document.getElementById('materialList');
+  container.innerHTML = editMaterials.map((m, i) => `
+    <div class="file-item">
+      <span>📦</span>
+      <span class="name">${escapeHtml(m.name)} — ${escapeHtml(m.file)}</span>
+      <button type="button" class="remove-btn" onclick="removeMaterial(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function addMaterial() {
+  const nameInput = document.getElementById('newMatName');
+  const fileInput = document.getElementById('newMatFile');
+  const name = nameInput.value.trim();
+  const file = fileInput.value.trim();
+  if (!name || !file) return;
+  editMaterials.push({ name, file });
+  nameInput.value = '';
+  fileInput.value = '';
+  renderMaterials();
+}
+
+function removeMaterial(index) {
+  editMaterials.splice(index, 1);
+  renderMaterials();
+}
+
+// ============ 保存 ============
+function saveTemplate() {
+  const id = document.getElementById('tmpId').value.trim();
+  const name = document.getElementById('tmpName').value.trim();
+  if (!name) { showToast('请输入模板名称', 'error'); return; }
+
+  const template = {
+    id: id || 'template-' + Date.now(),
+    name,
+    category: document.getElementById('tmpCategory').value.trim(),
+    thumbnail: document.getElementById('tmpThumb').value.trim(),
+    description: document.getElementById('tmpDesc').value.trim(),
+    screenshots: editScreenshots.filter(s => s.trim()),
+    editableAreas: editAnnotations.filter(a => a.label.trim()),
+    downloadMaterials: editMaterials.filter(m => m.name.trim() && m.file.trim()),
+  };
+
+  const index = parseInt(document.getElementById('tmpEditIndex').value);
+  if (index >= 0) {
+    templates[index] = template;
+  } else {
+    templates.push(template);
+  }
+
+  // 保存到 localStorage 作为备份
+  localStorage.setItem('admin_templates', JSON.stringify(templates));
+
+  closeEditor();
+  renderTable();
+  showToast('模板已保存（本地）', 'success');
+}
+
+// ============ 编辑/删除 ============
+function editTemplate(index) { openEditor(index); }
+function deleteTemplate(index) {
+  if (!confirm(`确定删除模板「${templates[index].name}」吗？此操作不可撤销。`)) return;
+  templates.splice(index, 1);
+  localStorage.setItem('admin_templates', JSON.stringify(templates));
+  renderTable();
+  showToast('模板已删除', 'success');
+}
+
+// ============ 导出/导入 ============
+function exportJSON() {
+  const data = JSON.stringify({ templates }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'templates.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('JSON 文件已下载，请替换 public/data/templates.json', 'success');
+}
+
+function loadFromFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!Array.isArray(data.templates)) {
+          throw new Error('格式错误');
+        }
+        templates = data.templates;
+        localStorage.setItem('admin_templates', JSON.stringify(templates));
+        renderTable();
+        showToast(`已导入 ${templates.length} 个模板`, 'success');
+      } catch {
+        showToast('JSON 格式无效，请检查文件', 'error');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ============ Toast ============
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast ' + type;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 2500);
+}
+
+// ============ 初始化 ============
+init();
+
+// 点击模态框背景关闭
+document.getElementById('editorModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditor();
+});
+</script>
+</body>
+</html>

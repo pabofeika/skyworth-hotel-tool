@@ -601,7 +601,7 @@ class HotelWorkflowExecutor {
 	        ].filter(Boolean),
 	      },
 	      plan_detail: { plan_type: 0 },
-	      goals: [{ hid: this.hotelId, room_nums: ['000'] }],
+	      goals: [{ hid: this.hotelId, room_nums: ['----'] }],
 	    };
 
 	    // 原生 fetch + FormData（兼容 Vercel，与浏览器 multipart 一致）

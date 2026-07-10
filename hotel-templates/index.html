@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>酒店模板展示站</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  :root { --bg: #0f172a; }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  }
+  .gate {
+    width: 380px;
+    max-width: 90vw;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+    padding: 40px 32px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .gate-icon { font-size: 48px; margin-bottom: 16px; }
+  .gate h1 { font-size: 22px; color: #f1f5f9; margin-bottom: 6px; font-weight: 600; }
+  .gate p { font-size: 13px; color: #64748b; margin-bottom: 28px; line-height: 1.5; }
+  .gate .input-wrap {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .gate .input-wrap input {
+    width: 100%;
+    padding: 14px 48px 14px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    color: #f1f5f9;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.2s;
+    letter-spacing: 2px;
+  }
+  .gate .input-wrap input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+    background: rgba(255,255,255,0.08);
+  }
+  .gate .input-wrap input::placeholder { color: #475569; letter-spacing: 0; }
+  .toggle-pwd {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+  }
+  .toggle-pwd:hover { color: #94a3b8; }
+  .gate .btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+  .error-msg {
+    color: var(--error);
+    font-size: 13px;
+    margin-top: 8px;
+    min-height: 20px;
+    transition: all 0.2s;
+  }
+  .spinner {
+    display: none;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="gate fade-in">
+  <div class="gate-icon">🏨</div>
+  <h1>酒店模板展示站</h1>
+  <p>请输入访问密码以查看模板内容</p>
+
+  <div class="input-wrap">
+    <input type="password" id="password" placeholder="请输入密码" autofocus>
+    <button class="toggle-pwd" id="togglePwd" title="显示/隐藏密码">👁️</button>
+  </div>
+
+  <button class="btn btn-primary" id="submitBtn">
+    <span id="btnText">验证进入</span>
+    <span class="spinner" id="spinner"></span>
+  </button>
+
+  <div class="error-msg" id="errorMsg"></div>
+</div>
+
+<script>
+// ============ 密码配置 ============
+// 修改密码：在浏览器控制台运行 hashPassword('新密码')，将输出替换下方值
+const PASSWORD_HASH = '5810b7140e962ceda9ed6efcd67fc85b343eecb340031e64a914ffdbfba25c33'; // 默认密码: hotel2024
+
+const passwordInput = document.getElementById('password');
+const submitBtn = document.getElementById('submitBtn');
+const btnText = document.getElementById('btnText');
+const spinner = document.getElementById('spinner');
+const errorMsg = document.getElementById('errorMsg');
+const togglePwd = document.getElementById('togglePwd');
+
+// 检查是否已登录
+const savedToken = sessionStorage.getItem('hotel_template_token');
+if (savedToken) {
+  window.location.href = 'main.html';
+}
+
+// 显示/隐藏密码
+togglePwd.addEventListener('click', () => {
+  const isPassword = passwordInput.type === 'password';
+  passwordInput.type = isPassword ? 'text' : 'password';
+  togglePwd.textContent = isPassword ? '🙈' : '👁️';
+});
+
+// 回车提交
+passwordInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') verify();
+});
+
+submitBtn.addEventListener('click', verify);
+
+// SHA-256 哈希（纯前端，无后端依赖）
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 辅助：生成密码哈希（控制台调用）
+async function hashPassword(pwd) {
+  const hash = await sha256(pwd);
+  console.log('密码哈希值:', hash);
+  return hash;
+}
+
+async function verify() {
+  const password = passwordInput.value.trim();
+  if (!password) {
+    errorMsg.textContent = '请输入密码';
+    return;
+  }
+
+  setLoading(true);
+  errorMsg.textContent = '';
+
+  try {
+    const inputHash = await sha256(password);
+
+    if (inputHash === PASSWORD_HASH) {
+      sessionStorage.setItem('hotel_template_token', await sha256(password + Date.now()));
+      window.location.href = 'main.html';
+    } else {
+      errorMsg.textContent = '密码错误，请重试';
+      passwordInput.value = '';
+      passwordInput.focus();
+    }
+  } catch (err) {
+    errorMsg.textContent = '验证失败，请刷新重试';
+  } finally {
+    setLoading(false);
+  }
+}
+
+function setLoading(loading) {
+  btnText.style.display = loading ? 'none' : '';
+  spinner.style.display = loading ? 'inline-block' : 'none';
+  submitBtn.disabled = loading;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>标注编辑器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,sans-serif;background:#1e293b;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+.toolbar{padding:10px 16px;background:#0f172a;border-bottom:1px solid #334155;display:flex;gap:12px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+.toolbar select,.toolbar button{padding:6px 12px;border-radius:6px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;font-size:13px;cursor:pointer;font-family:inherit}
+.toolbar button:hover{background:#334155}
+.toolbar button.primary{background:#4f46e5;border-color:#4f46e5;color:#fff}
+.toolbar button.primary:hover{background:#4338ca}
+.toolbar .sep{width:1px;height:24px;background:#475569}
+
+.main{display:flex;flex:1;overflow:hidden}
+.canvas-area{flex:1;position:relative;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.canvas-area img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+#canvasContainer{position:relative;display:inline-block}
+
+/* 标注框 */
+.ann-box{position:absolute;border:2px dashed #f59e0b;background:rgba(245,158,11,0.08);cursor:move;z-index:10;transition:box-shadow 0.15s}
+.ann-box:hover,.ann-box.active{box-shadow:0 0 0 2px rgba(245,158,11,0.4)}
+.ann-box .label{position:absolute;top:-22px;left:-2px;background:#f59e0b;color:#000;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap;pointer-events:none}
+.ann-box .resize-handle{position:absolute;width:10px;height:10px;background:#f59e0b;border:1px solid #000;z-index:11}
+.ann-box .resize-handle.nw{top:-5px;left:-5px;cursor:nw-resize}
+.ann-box .resize-handle.ne{top:-5px;right:-5px;cursor:ne-resize}
+.ann-box .resize-handle.sw{bottom:-5px;left:-5px;cursor:sw-resize}
+.ann-box .resize-handle.se{bottom:-5px;right:-5px;cursor:se-resize}
+
+/* 侧边栏 */
+.sidebar{width:320px;min-width:320px;background:#0f172a;border-left:1px solid #334155;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+.sidebar h4{font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px}
+.area-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+.area-item{padding:10px 12px;background:#1e293b;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all 0.15s}
+.area-item:hover{border-color:#475569}
+.area-item.active{border-color:#f59e0b;background:rgba(245,158,11,0.06)}
+.area-item .area-name{font-size:13px;font-weight:500;margin-bottom:4px}
+.area-item .area-coords{font-size:11px;color:#64748b}
+.area-item .actions{margin-top:6px;display:flex;gap:4px}
+.area-item .actions button{padding:3px 8px;border-radius:4px;border:1px solid #475569;background:transparent;color:#94a3b8;font-size:11px;cursor:pointer}
+.area-item .actions button:hover{background:#334155}
+.area-item .actions button.danger{color:#ef4444;border-color:#ef4444}
+
+.coord-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.coord-inputs label{font-size:11px;color:#64748b}
+.coord-inputs input{width:100%;padding:6px 8px;border-radius:4px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;font-size:12px;font-family:inherit}
+
+.export-area{background:#1e293b;border-radius:8px;padding:12px}
+.export-area pre{font-size:11px;color:#94a3b8;max-height:200px;overflow:auto;margin-top:8px;white-space:pre-wrap;word-break:break-all}
+
+.msg{position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
+.msg.ok{background:#10b981;color:#fff;display:block}
+.msg.err{background:#ef4444;color:#fff;display:block}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span style="font-weight:600;margin-right:8px">🎯 标注编辑器</span>
+  <span class="sep"></span>
+  <select id="selTemplate"></select>
+  <select id="selSection"></select>
+  <select id="selScreenshot"></select>
+  <span class="sep"></span>
+  <button id="btnAdd" class="primary">+ 添加标注框</button>
+  <button id="btnExport">📋 导出该截图坐标</button>
+  <button id="btnExportAll">📦 导出全部坐标</button>
+</div>
+
+<div class="main">
+  <div class="canvas-area" id="canvasArea">
+    <div id="canvasContainer">
+      <img id="mainImg" src="" alt="" style="display:none">
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div>
+      <h4>📐 当前标注框</h4>
+      <p style="font-size:11px;color:#64748b;margin-bottom:8px">点击框或右侧列表选中，拖拽调整位置</p>
+      <ul class="area-list" id="areaList"></ul>
+    </div>
+
+    <div id="editPanel" style="display:none">
+      <h4>✏️ 编辑选中框</h4>
+      <div class="coord-inputs">
+        <div><label>名称</label><input id="editLabel" placeholder="区域名称"></div>
+        <div></div>
+        <div><label>X (%)</label><input type="number" id="editX" step="0.1" min="0" max="100"></div>
+        <div><label>Y (%)</label><input type="number" id="editY" step="0.1" min="0" max="100"></div>
+        <div><label>W (%)</label><input type="number" id="editW" step="0.1" min="0" max="100"></div>
+        <div><label>H (%)</label><input type="number" id="editH" step="0.1" min="0" max="100"></div>
+      </div>
+      <div style="margin-top:10px;padding:10px;background:#0f172a;border-radius:6px">
+        <div style="font-size:11px;color:#64748b;margin-bottom:6px">📐 手动输入像素（基于 1920×1080）</div>
+        <div class="coord-inputs">
+          <div><label>左上 X (px)</label><input type="number" id="pxX" step="1" min="0" max="1920"></div>
+          <div><label>左上 Y (px)</label><input type="number" id="pxY" step="1" min="0" max="1080"></div>
+          <div><label>宽度 (px)</label><input type="number" id="pxW" step="1" min="1" max="1920"></div>
+          <div><label>高度 (px)</label><input type="number" id="pxH" step="1" min="1" max="1080"></div>
+        </div>
+        <div id="pxInfo" style="font-size:11px;color:#f59e0b;font-weight:600;margin-top:6px">—</div>
+      </div>
+      <div style="margin-top:10px">
+        <label style="font-size:11px;color:#64748b;margin-bottom:4px;display:block">📝 内容描述（框内应放什么）</label>
+        <textarea id="editDesc" rows="3" placeholder="如：显示酒店名称，字体白色加粗，字号26px" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+      </div>
+    </div>
+
+    <div class="export-area" id="exportArea" style="display:none">
+      <h4>📤 导出坐标</h4>
+      <pre id="exportCode"></pre>
+    </div>
+  </div>
+</div>
+
+<div class="msg" id="msg"></div>
+
+<script>
+let templates = [];
+let currentTemplate = null;
+let currentSectionIdx = 0;
+let currentScreenIdx = 0;
+let areas = [];           // 当前截图的标注 [{label,x,y,w,h}]
+let selectedAreaIdx = -1;
+let dragMode = null;
+let dragStart = {};
+let resizeDir = null;
+
+const canvasArea = document.getElementById('canvasArea');
+const container = document.getElementById('canvasContainer');
+const mainImg = document.getElementById('mainImg');
+
+// ============ 加载数据 ============
+async function init() {
+  try {
+    const res = await fetch('data/templates.json');
+    templates = (await res.json()).templates || [];
+    if (templates.length === 0) { showMsg('暂无模板数据', 'err'); return; }
+    renderTemplateSelect();
+    selectTemplate(0);
+  } catch(e) { showMsg('加载失败: ' + e.message, 'err'); }
+}
+
+function renderTemplateSelect() {
+  const sel = document.getElementById('selTemplate');
+  sel.innerHTML = templates.map((t, i) => `<option value="${i}">${t.name}</option>`).join('');
+  sel.onchange = () => selectTemplate(parseInt(sel.value));
+}
+
+function selectTemplate(idx) {
+  currentTemplate = templates[idx];
+  if (!currentTemplate) return;
+
+  const sections = currentTemplate.sections || [];
+  const selSec = document.getElementById('selSection');
+  selSec.innerHTML = sections.map((s, i) => `<option value="${i}">${s.name}</option>`).join('');
+  selSec.onchange = () => { currentSectionIdx = parseInt(selSec.value); currentScreenIdx = 0; loadScreenshot(); };
+  currentSectionIdx = 0;
+  selSec.value = 0;
+  loadScreenshot();
+}
+
+function loadScreenshot() {
+  const section = currentTemplate.sections?.[currentSectionIdx];
+  if (!section) return;
+
+  const selScreen = document.getElementById('selScreenshot');
+  selScreen.innerHTML = section.screenshots.map((s, i) => {
+    const label = typeof s === 'string' ? `截图 ${i+1}` : (s.label || `截图 ${i+1}`);
+    return `<option value="${i}">${label}</option>`;
+  }).join('');
+  selScreen.onchange = () => { currentScreenIdx = parseInt(selScreen.value); renderScreenshot(); };
+  currentScreenIdx = 0;
+  selScreen.value = 0;
+  renderScreenshot();
+}
+
+function renderScreenshot() {
+  const section = currentTemplate.sections?.[currentSectionIdx];
+  if (!section) return;
+
+  const screen = section.screenshots?.[currentScreenIdx];
+  if (!screen) return;
+
+  // 加载图片
+  const file = typeof screen === 'string' ? screen : screen.file;
+  mainImg.src = file;
+  mainImg.style.display = '';
+
+  // 加载已有标注
+  areas = (typeof screen === 'string' ? [] : [...(screen.editableAreas || [])]).map(a => ({...a}));
+
+  // 清除选中
+  selectedAreaIdx = -1;
+  document.getElementById('editPanel').style.display = 'none';
+
+  mainImg.onload = () => {
+    renderBoxes();
+    renderAreaList();
+  };
+  if (mainImg.complete) {
+    renderBoxes();
+    renderAreaList();
+  }
+}
+
+// ============ 渲染标注框 ============
+function renderBoxes() {
+  // 清除旧框
+  container.querySelectorAll('.ann-box').forEach(b => b.remove());
+
+  areas.forEach((a, i) => {
+    const box = document.createElement('div');
+    box.className = 'ann-box' + (i === selectedAreaIdx ? ' active' : '');
+    box.style.cssText = `left:${a.x}%;top:${a.y}%;width:${a.w}%;height:${a.h}%`;
+    box.dataset.index = i;
+
+    const label = document.createElement('span');
+    label.className = 'label';
+    const pw = Math.round(a.w * 1920 / 100);
+    const ph = Math.round(a.h * 1080 / 100);
+    label.textContent = `${a.label || '未命名'} ${pw}×${ph}px`;
+    box.appendChild(label);
+
+    // 四个拖拽手柄
+    ['nw','ne','sw','se'].forEach(dir => {
+      const h = document.createElement('div');
+      h.className = 'resize-handle ' + dir;
+      h.addEventListener('mousedown', e => startResize(e, i, dir));
+      box.appendChild(h);
+    });
+
+    box.addEventListener('mousedown', e => startDrag(e, i));
+    box.addEventListener('click', e => { e.stopPropagation(); selectArea(i); });
+    container.appendChild(box);
+  });
+}
+
+function renderAreaList() {
+  const list = document.getElementById('areaList');
+  list.innerHTML = areas.map((a, i) => {
+    const pw = Math.round(a.w * 1920 / 100);
+    const ph = Math.round(a.h * 1080 / 100);
+    return `
+    <div class="area-item ${i === selectedAreaIdx ? 'active' : ''}" onclick="selectArea(${i})">
+      <div class="area-name">✏️ ${a.label || '未命名'}</div>
+      <div class="area-coords">x:${a.x.toFixed(1)}% y:${a.y.toFixed(1)}% | ${pw}×${ph}px</div>
+      <div class="area-coords" style="font-size:10px;opacity:0.6">宽:${a.w.toFixed(1)}% 高:${a.h.toFixed(1)}%</div>
+      ${a.desc ? `<div style="font-size:11px;color:#94a3b8;margin-top:4px;line-height:1.4;max-height:30px;overflow:hidden">${a.desc}</div>` : ''}
+      <div class="actions">
+        <button class="danger" onclick="event.stopPropagation();deleteArea(${i})">删除</button>
+      </div>
+    </div>
+  `;
+  }).join('');
+  if (areas.length === 0) {
+    list.innerHTML = '<p style="font-size:12px;color:#64748b">暂无标注框，点击「+ 添加标注框」</p>';
+  }
+}
+
+function selectArea(idx) {
+  selectedAreaIdx = idx;
+  renderBoxes();
+  renderAreaList();
+  if (idx >= 0 && idx < areas.length) {
+    const a = areas[idx];
+    document.getElementById('editPanel').style.display = 'block';
+    document.getElementById('editLabel').value = a.label || '';
+    document.getElementById('editX').value = a.x.toFixed(1);
+    document.getElementById('editY').value = a.y.toFixed(1);
+    document.getElementById('editW').value = a.w.toFixed(1);
+    document.getElementById('editH').value = a.h.toFixed(1);
+    // 像素
+    document.getElementById('pxX').value = Math.round(a.x * 1920 / 100);
+    document.getElementById('pxY').value = Math.round(a.y * 1080 / 100);
+    document.getElementById('pxW').value = Math.round(a.w * 1920 / 100);
+    document.getElementById('pxH').value = Math.round(a.h * 1080 / 100);
+    document.getElementById('editDesc').value = a.desc || '';
+    updatePxInfo(a);
+  } else {
+    document.getElementById('editPanel').style.display = 'none';
+  }
+}
+
+function updatePxInfo(a) {
+  const px = Math.round(a.x * 1920 / 100);
+  const py = Math.round(a.y * 1080 / 100);
+  const pw = Math.round(a.w * 1920 / 100);
+  const ph = Math.round(a.h * 1080 / 100);
+  document.getElementById('pxInfo').textContent = `${pw}×${ph}px（左上角 ${px},${py}）`;
+}
+
+// ============ 拖拽 ============
+function startDrag(e, idx) {
+  if (e.target.classList.contains('resize-handle')) return;
+  e.preventDefault();
+  selectedAreaIdx = idx;
+  selectArea(idx);
+  dragMode = 'move';
+  dragStart = { x: e.clientX, y: e.clientY, orig: {...areas[idx]} };
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', stopDrag);
+}
+
+function startResize(e, idx, dir) {
+  e.preventDefault();
+  e.stopPropagation();
+  selectedAreaIdx = idx;
+  selectArea(idx);
+  dragMode = 'resize';
+  resizeDir = dir;
+  dragStart = { x: e.clientX, y: e.clientY, orig: {...areas[idx]} };
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', stopDrag);
+}
+
+function onDrag(e) {
+  if (!dragMode || selectedAreaIdx < 0) return;
+  const rect = mainImg.getBoundingClientRect();
+  const dx = ((e.clientX - dragStart.x) / rect.width) * 100;
+  const dy = ((e.clientY - dragStart.y) / rect.height) * 100;
+  const a = areas[selectedAreaIdx];
+
+  if (dragMode === 'move') {
+    a.x = Math.max(0, Math.min(100, dragStart.orig.x + dx));
+    a.y = Math.max(0, Math.min(100, dragStart.orig.y + dy));
+  } else if (dragMode === 'resize') {
+    const d = resizeDir;
+    if (d.includes('n')) { a.y = Math.max(0, Math.min(dragStart.orig.y + dragStart.orig.h, dragStart.orig.y + dy)); a.h = Math.max(1, dragStart.orig.h - dy); }
+    if (d.includes('s')) { a.h = Math.max(1, Math.min(100 - dragStart.orig.y, dragStart.orig.h + dy)); }
+    if (d.includes('w')) { a.x = Math.max(0, Math.min(dragStart.orig.x + dragStart.orig.w, dragStart.orig.x + dx)); a.w = Math.max(1, dragStart.orig.w - dx); }
+    if (d.includes('e')) { a.w = Math.max(1, Math.min(100 - dragStart.orig.x, dragStart.orig.w + dx)); }
+  }
+
+  renderBoxes();
+  renderAreaList();
+  updateEditPanel();
+  updatePxInfo(a);
+}
+
+function stopDrag() {
+  dragMode = null;
+  resizeDir = null;
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', stopDrag);
+  // 保存到模板数据
+  saveCurrentAreas();
+}
+
+function updateEditPanel() {
+  if (selectedAreaIdx < 0) return;
+  const a = areas[selectedAreaIdx];
+  document.getElementById('editX').value = a.x.toFixed(1);
+  document.getElementById('editY').value = a.y.toFixed(1);
+  document.getElementById('editW').value = a.w.toFixed(1);
+  document.getElementById('editH').value = a.h.toFixed(1);
+  document.getElementById('pxX').value = Math.round(a.x * 1920 / 100);
+  document.getElementById('pxY').value = Math.round(a.y * 1080 / 100);
+  document.getElementById('pxW').value = Math.round(a.w * 1920 / 100);
+  document.getElementById('pxH').value = Math.round(a.h * 1080 / 100);
+  updatePxInfo(a);
+}
+
+// 百分比输入 → 更新像素
+['editLabel','editX','editY','editW','editH'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    if (selectedAreaIdx < 0) return;
+    const a = areas[selectedAreaIdx];
+    a.label = document.getElementById('editLabel').value;
+    a.x = parseFloat(document.getElementById('editX').value) || 0;
+    a.y = parseFloat(document.getElementById('editY').value) || 0;
+    a.w = parseFloat(document.getElementById('editW').value) || 1;
+    a.h = parseFloat(document.getElementById('editH').value) || 1;
+    a.desc = document.getElementById('editDesc').value;
+    updateEditPanel();
+    renderBoxes();
+    renderAreaList();
+    saveCurrentAreas();
+  });
+});
+
+// 描述 textarea
+document.getElementById('editDesc').addEventListener('input', () => {
+  if (selectedAreaIdx < 0) return;
+  areas[selectedAreaIdx].desc = document.getElementById('editDesc').value;
+  renderAreaList();
+  saveCurrentAreas();
+});
+
+// 像素输入 → 更新百分比
+['pxX','pxY','pxW','pxH'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    if (selectedAreaIdx < 0) return;
+    const a = areas[selectedAreaIdx];
+    a.label = document.getElementById('editLabel').value;
+    a.x = ((parseInt(document.getElementById('pxX').value) || 0) / 1920) * 100;
+    a.y = ((parseInt(document.getElementById('pxY').value) || 0) / 1080) * 100;
+    a.w = ((parseInt(document.getElementById('pxW').value) || 1) / 1920) * 100;
+  a.h = ((parseInt(document.getElementById('pxH').value) || 1) / 1080) * 100;
+  a.desc = document.getElementById('editDesc').value;
+  updateEditPanel();
+    renderBoxes();
+    renderAreaList();
+    saveCurrentAreas();
+  });
+});
+
+function saveCurrentAreas() {
+  const section = currentTemplate.sections?.[currentSectionIdx];
+  if (!section) return;
+  const screen = section.screenshots?.[currentScreenIdx];
+  if (!screen || typeof screen === 'string') return;
+  screen.editableAreas = areas.map(a => {
+    const item = {
+      label: a.label, x: Math.round(a.x*10)/10, y: Math.round(a.y*10)/10,
+      w: Math.round(a.w*10)/10, h: Math.round(a.h*10)/10
+    };
+    if (a.desc && a.desc.trim()) item.desc = a.desc.trim();
+    return item;
+  });
+}
+
+// ============ 按钮操作 ============
+document.getElementById('btnAdd').addEventListener('click', () => {
+  areas.push({ label: '新区域', x: 20, y: 20, w: 30, h: 20 });
+  selectedAreaIdx = areas.length - 1;
+  saveCurrentAreas();
+  renderBoxes();
+  renderAreaList();
+  selectArea(selectedAreaIdx);
+});
+
+function deleteArea(idx) {
+  areas.splice(idx, 1);
+  selectedAreaIdx = Math.min(selectedAreaIdx, areas.length - 1);
+  saveCurrentAreas();
+  renderBoxes();
+  renderAreaList();
+  if (selectedAreaIdx >= 0) selectArea(selectedAreaIdx);
+  else document.getElementById('editPanel').style.display = 'none';
+}
+
+document.getElementById('btnExport').addEventListener('click', () => {
+  const section = currentTemplate.sections?.[currentSectionIdx];
+  if (!section) return;
+  const screen = section.screenshots?.[currentScreenIdx];
+  const name = typeof screen === 'string' ? '截图' : (screen.label || '截图');
+  const code = JSON.stringify(areas.map(a => {
+    const item = {
+      label: a.label, x: Math.round(a.x*10)/10, y: Math.round(a.y*10)/10,
+      w: Math.round(a.w*10)/10, h: Math.round(a.h*10)/10
+    };
+    if (a.desc && a.desc.trim()) item.desc = a.desc.trim();
+    return item;
+  }), null, 2);
+  document.getElementById('exportArea').style.display = 'block';
+  document.getElementById('exportCode').textContent = code;
+  // 复制到剪贴板
+  navigator.clipboard.writeText(code).then(() => showMsg('✅ 已复制到剪贴板'));
+});
+
+document.getElementById('btnExportAll').addEventListener('click', () => {
+  // 导出该模板所有截图的坐标，只保留 editableAreas
+  const sectionsExport = currentTemplate.sections.map(sec => ({
+    name: sec.name,
+    screenshots: sec.screenshots.map(s => ({
+      label: typeof s === 'string' ? '截图' : (s.label || '截图'),
+      file: typeof s === 'string' ? s : s.file,
+      editableAreas: (typeof s === 'string' ? [] : (s.editableAreas || [])).map(a => {
+        const item = {
+          label: a.label, x: Math.round(a.x*10)/10, y: Math.round(a.y*10)/10,
+          w: Math.round(a.w*10)/10, h: Math.round(a.h*10)/10
+        };
+        if (a.desc && a.desc.trim()) item.desc = a.desc.trim();
+        return item;
+      })
+    }))
+  }));
+  const code = JSON.stringify(sectionsExport, null, 2);
+  document.getElementById('exportArea').style.display = 'block';
+  document.getElementById('exportCode').textContent = code;
+  navigator.clipboard.writeText(code).then(() => showMsg('✅ 全部坐标已复制到剪贴板'));
+});
+
+// ============ 键盘 ============
+document.addEventListener('keydown', e => {
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (selectedAreaIdx >= 0 && document.activeElement === document.body) {
+      deleteArea(selectedAreaIdx);
+    }
+  }
+});
+
+function showMsg(text, type) {
+  const m = document.getElementById('msg');
+  m.textContent = text;
+  m.className = 'msg ' + (type || 'ok');
+  setTimeout(() => m.className = 'msg', 2000);
+}
+
+// ============ 启动 ============
+init();
+</script>
+</body>
+</html>

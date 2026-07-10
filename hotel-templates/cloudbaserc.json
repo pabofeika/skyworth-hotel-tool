@@ -1,0 +1,17 @@
+{
+  "version": "2.0",
+  "envId": "leon-d8g5sxb3n3c6ba2d7",
+  "framework": {
+    "name": "hotel-templates",
+    "plugins": {
+      "website": {
+        "use": "@cloudbase/framework-plugin-website",
+        "inputs": {
+          "buildCommand": "",
+          "outputPath": "./",
+          "cloudPath": "/"
+        }
+      }
+    }
+  }
+}

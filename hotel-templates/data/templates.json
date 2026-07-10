@@ -1,0 +1,357 @@
+{
+  "templates": [
+    {
+      "id": "zuyu-template",
+      "name": "足浴新模版",
+      "category": "养生会所",
+      "thumbnail": "assets/templates/homepage/screen-1.jpg",
+      "description": "养生会所电视界面完整复刻，包含主页、技师目录、企业宣传、会员商城、服务中心、氛围模式、影音娱乐等全套模块。采用深色主题设计，底部Tab导航，适配1920×1080分辨率。",
+      "sections": [
+        {
+          "name": "主页",
+          "screenshots": [
+            {
+              "file": "assets/templates/homepage/screen-1.jpg",
+              "label": "三窗口布局",
+              "editableAreas": [
+                { "label": "Logo/店名", "x": 3.2, "y": 3.5, "w": 26, "h": 7.4, "desc": "开机logo 必须使用.png/.Webp 格式  最大尺寸为显示尺寸。" },
+                { "label": "背景图片", "x": 0.2, "y": 0, "w": 100, "h": 100, "desc": "请查看左上角为该素材具体尺寸。" },
+                { "label": "左侧窗口（沐足）", "x": 4.1, "y": 14.3, "w": 29.2, "h": 64.8, "desc": "支持点击跳转二级页面。请查看左上角为该素材具体尺寸。" },
+                { "label": "中间窗口（按摩）", "x": 35.3, "y": 14.2, "w": 29.2, "h": 64.8, "desc": "支持点击跳转二级页面。请查看左上角为该素材具体尺寸。" },
+                { "label": "右侧窗口（茶艺）", "x": 66.6, "y": 14.4, "w": 29.2, "h": 64.8, "desc": "支持点击跳转二级页面。请查看左上角为该素材具体尺寸。" },
+                { "label": "底部tab图标", "x": 9.4, "y": 84.9, "w": 5.2, "h": 9.3, "desc": "图标尺寸 100X100px" }
+              ]
+            },
+            {
+              "file": "assets/templates/homepage/screen-2.jpg",
+              "label": "大图单一窗口",
+              "editableAreas": [
+                { "label": "Logo/店名", "x": 3.3, "y": 3.4, "w": 26, "h": 7.4 },
+                { "label": "主背景大图", "x": 0, "y": 0, "w": 100.1, "h": 100 },
+                { "label": "新区域", "x": 4.1, "y": 14.4, "w": 91.7, "h": 64.8 }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "技师目录",
+          "screenshots": [
+            {
+              "file": "assets/templates/technician/screen-1.jpg",
+              "label": "技师目录主页",
+              "editableAreas": [
+                { "label": "技师照片（大图）", "x": 5.4, "y": 17.4, "w": 18.9, "h": 44.4, "desc": "图片由收银saas对接后推送，无收银saas后台可以提供上传图片。通过创维后台录入。但不支持数据实时变动。" },
+                { "label": "技术信息内容", "x": 4.9, "y": 62.4, "w": 19.8, "h": 16.9, "desc": "由收银saas对接后推送，无收银saas后台可以通过创维后台录入。但不支持数据实时变动。" }
+              ]
+            },
+            {
+              "file": "assets/templates/technician/screen-2.jpg",
+              "label": "技师列表",
+              "editableAreas": [
+                { "label": "技术目录tab", "x": 3.7, "y": 5.1, "w": 41.7, "h": 7.3, "desc": "当前区域数据根据后台推送分类展示。如未对接saas收银，创维后台也支持展示技师目录信息。" },
+                { "label": "技师图片展示", "x": 5.2, "y": 17, "w": 14.7, "h": 33.5, "desc": "展示图片根据后台数据直接展示。" }
+              ]
+            },
+            {
+              "file": "assets/templates/technician/screen-3.jpg",
+              "label": "技师详情（含视频）",
+              "editableAreas": [
+                { "label": "技师照片轮播", "x": 5.4, "y": 16.9, "w": 23.4, "h": 75, "desc": "根据后台数据传输展示，支持多张图片。最大支持5张图片。" },
+                { "label": "信息详情", "x": 31.7, "y": 16.4, "w": 64.7, "h": 42.2, "desc": "当前模块内容信息，均为后台传输。无需传输。不用考虑当前内容" },
+                { "label": "技师风采", "x": 32.2, "y": 64.9, "w": 29.7, "h": 29.6, "desc": "根据后台是否有数据展示显示内容。支持视频内容。" }
+              ]
+            },
+            {
+              "file": "assets/templates/technician/screen-4.jpg",
+              "label": "技师详情（无视频）",
+              "editableAreas": [
+                { "label": "技师大照片", "x": 5.3, "y": 17, "w": 23.4, "h": 75, "desc": "根据后台数据传输展示，支持多张图片。最大支持5张图片。" },
+                { "label": "技师描述", "x": 32.1, "y": 15.6, "w": 64.8, "h": 43.6, "desc": "当前模块内容信息，均为后台传输。无需传输。不用考虑当前内容" }
+              ]
+            },
+            {
+              "file": "assets/templates/technician/screen-5.jpg",
+              "label": "技师图片放大",
+              "editableAreas": [
+                { "label": "放大图片区域", "x": 3.9, "y": 8, "w": 31.7, "h": 83.8, "desc": "当前图片根据后台上传内容将图片自动放大。无需关注" }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "企业宣传",
+          "screenshots": [
+            {
+              "file": "assets/templates/promotion/screen-1.jpg",
+              "label": "右侧轮播图",
+              "editableAreas": [
+                { "label": "左侧入口1", "x": 4.2, "y": 14.3, "w": 24.8, "h": 30.6, "desc": "当前内容用户自定内容。允许用户跳转至二级页面。具体图片尺寸请参考左上角显示" },
+                { "label": "图片轮播区域", "x": 31.1, "y": 14.2, "w": 64.8, "h": 64.8, "desc": "右侧轮播大图，最大支持5张图片轮播。或者单张图片显示。可跳转至二级页面。当前面页支持替换成视频。具体图片尺寸请参考左上角显示。" },
+                { "label": "左侧入口2", "x": 4.1, "y": 48.4, "w": 24.8, "h": 30.6 }
+              ]
+            },
+            {
+              "file": "assets/templates/promotion/screen-2.jpg",
+              "label": "轮播图（第二张）",
+              "editableAreas": [
+                { "label": "轮播图片区", "x": 31.1, "y": 14.4, "w": 64.8, "h": 64.8, "desc": "右侧轮播大图，最大支持5张图片轮播。或者单张图片显示。可跳转至二级页面。当前面页支持替换成视频。具体图片尺寸请参考左上角显示。" },
+                { "label": "左侧宣传位", "x": 4.1, "y": 14.4, "w": 24.8, "h": 64.8, "desc": "支持跳转二级页面。当前页面仅支持图片展示。具体图片尺寸请参考左上角显示。" }
+              ]
+            },
+            {
+              "file": "assets/templates/promotion/screen-3.jpg",
+              "label": "右侧静态图片",
+              "editableAreas": [
+                { "label": "轮播图片区", "x": 31.1, "y": 14.4, "w": 64.8, "h": 64.8, "desc": "右侧轮播大图，最大支持5张图片轮播。或者单张图片显示。可跳转至二级页面。当前面页支持替换成视频。具体图片尺寸请参考左上角显示。" },
+                { "label": "左侧宣传位", "x": 4.1, "y": 14.4, "w": 24.8, "h": 64.8, "desc": "支持跳转二级页面。当前页面仅支持图片展示。具体图片尺寸请参考左上角显示。" }
+              ]
+            },
+            {
+              "file": "assets/templates/promotion/screen-4.jpg",
+              "label": "右侧视频",
+              "editableAreas": [
+                { "label": "右侧宣传图片", "x": 30.9, "y": 14.2, "w": 64.8, "h": 64.8, "desc": "单张图片显示。可跳转至二级页面。当前面页支持替换成视频。具体图片尺寸请参考左上角显示。" },
+                { "label": "左侧宣传位", "x": 4.1, "y": 14.4, "w": 24.8, "h": 64.8, "desc": "支持跳转二级页面。当前页面仅支持图片展示。具体图片尺寸请参考左上角显示。" }
+              ]
+            },
+            {
+              "file": "assets/templates/promotion/screen-5.jpg",
+              "label": "集团介绍",
+              "editableAreas": [
+                { "label": "视频播放区", "x": 31, "y": 14.3, "w": 64.8, "h": 64.8, "desc": "可以直接在当前页面播放视频或者跳转至二级页面播放视频的，视频比例保证为16:9（1920X1080）。提供视频的时需要提供一下视频起始图片。" },
+                { "label": "左侧宣传位", "x": 4.2, "y": 14.5, "w": 24.8, "h": 64.8, "desc": "支持跳转二级页面。当前页面仅支持图片展示。具体图片尺寸请参考左上角显示。" }
+              ]
+            },
+            {
+              "file": "assets/templates/promotion/screen-6.jpg",
+              "label": "门店介绍",
+              "editableAreas": [
+                { "label": "门店名称/标题", "x": 5, "y": 15, "w": 45, "h": 6 },
+                { "label": "门店环境照片", "x": 5, "y": 24, "w": 45, "h": 50 },
+                { "label": "门店介绍文字", "x": 52, "y": 15, "w": 45, "h": 70 }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "会员商城",
+          "screenshots": [
+            {
+              "file": "assets/templates/membership/screen-1.jpg",
+              "label": "全屏大图",
+              "editableAreas": [
+                { "label": "商城大图/海报", "x": 0, "y": 0, "w": 100, "h": 86 },
+                { "label": "底部Tab导航", "x": 0, "y": 88, "w": 100, "h": 12 }
+              ]
+            },
+            {
+              "file": "assets/templates/membership/screen-2.jpg",
+              "label": "轮播+扫码入会",
+              "editableAreas": [
+                { "label": "左侧轮播图区", "x": 5, "y": 15, "w": 55, "h": 72 },
+                { "label": "右侧二维码区", "x": 65, "y": 20, "w": 25, "h": 35 },
+                { "label": "入会说明文字", "x": 65, "y": 58, "w": 25, "h": 25 }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "服务中心",
+          "screenshots": [
+            {
+              "file": "assets/templates/service/screen-1.jpg",
+              "label": "带消费订单信息（主界面）",
+              "editableAreas": [
+                { "label": "左侧消费订单区", "x": 5, "y": 15, "w": 42, "h": 72 },
+                { "label": "右侧服务项目列表", "x": 52, "y": 15, "w": 45, "h": 72 },
+                { "label": "底部Tab导航", "x": 0, "y": 88, "w": 100, "h": 12 }
+              ]
+            },
+            {
+              "file": "assets/templates/service/screen-2.jpg",
+              "label": "左侧轮播+右侧服务",
+              "editableAreas": [
+                { "label": "左侧轮播图", "x": 5, "y": 15, "w": 42, "h": 72 },
+                { "label": "右侧服务列表", "x": 52, "y": 15, "w": 45, "h": 72 }
+              ]
+            },
+            {
+              "file": "assets/templates/service/screen-3.jpg",
+              "label": "左侧视频+右侧服务",
+              "editableAreas": [
+                { "label": "左侧视频区", "x": 5, "y": 15, "w": 42, "h": 72 },
+                { "label": "右侧服务列表", "x": 52, "y": 15, "w": 45, "h": 72 }
+              ]
+            },
+            {
+              "file": "assets/templates/service/screen-4.jpg",
+              "label": "左侧图片+右侧服务",
+              "editableAreas": [
+                { "label": "左侧展示图片", "x": 5, "y": 15, "w": 42, "h": 72 },
+                { "label": "右侧服务列表", "x": 52, "y": 15, "w": 45, "h": 72 }
+              ]
+            },
+            {
+              "file": "assets/templates/service/screen-5.jpg",
+              "label": "消费清单",
+              "editableAreas": [
+                { "label": "消费清单列表", "x": 5, "y": 15, "w": 90, "h": 72 },
+                { "label": "底部Tab导航", "x": 0, "y": 88, "w": 100, "h": 12 }
+              ]
+            },
+            {
+              "file": "assets/templates/service/screen-6.jpg",
+              "label": "特色服务-足浴",
+              "editableAreas": [
+                { "label": "服务项目名称（足浴）", "x": 5, "y": 15, "w": 30, "h": 6 },
+                { "label": "价格表", "x": 5, "y": 24, "w": 90, "h": 55 },
+                { "label": "特色服务介绍图", "x": 5, "y": 24, "w": 90, "h": 55 }
+              ]
+            },
+            {
+              "file": "assets/templates/service/screen-7.jpg",
+              "label": "特色服务-按摩",
+              "editableAreas": [
+                { "label": "服务项目名称（按摩）", "x": 5, "y": 15, "w": 30, "h": 6 },
+                { "label": "价格表", "x": 5, "y": 24, "w": 90, "h": 55 },
+                { "label": "特色服务介绍图", "x": 5, "y": 24, "w": 90, "h": 55 }
+              ]
+            },
+            {
+              "file": "assets/templates/service/screen-8.jpg",
+              "label": "特色服务-茶艺",
+              "editableAreas": [
+                { "label": "服务项目名称（茶艺）", "x": 5, "y": 15, "w": 30, "h": 6 },
+                { "label": "价格表", "x": 5, "y": 24, "w": 90, "h": 55 },
+                { "label": "特色服务介绍图", "x": 5, "y": 24, "w": 90, "h": 55 }
+              ]
+            },
+            {
+              "file": "assets/templates/service/screen-9.jpg",
+              "label": "小项价格表",
+              "editableAreas": [
+                { "label": "价格表标题", "x": 30, "y": 12, "w": 40, "h": 6 },
+                { "label": "表头（项目/时长/价格）", "x": 5, "y": 20, "w": 90, "h": 6 },
+                { "label": "价格数据行", "x": 5, "y": 28, "w": 90, "h": 55 },
+                { "label": "底部切换提示", "x": 20, "y": 86, "w": 60, "h": 4 },
+                { "label": "分页指示器", "x": 40, "y": 92, "w": 20, "h": 4 }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "氛围模式",
+          "screenshots": [
+            {
+              "file": "assets/templates/ambiance/screen-1.jpg",
+              "label": "带本地音乐播放",
+              "editableAreas": [
+                { "label": "当前播放曲目", "x": 10, "y": 8, "w": 50, "h": 6 },
+                { "label": "模式/氛围背景图", "x": 5, "y": 18, "w": 90, "h": 55 },
+                { "label": "音乐控制区", "x": 10, "y": 78, "w": 80, "h": 10 },
+                { "label": "底部Tab导航", "x": 0, "y": 88, "w": 100, "h": 12 }
+              ]
+            },
+            {
+              "file": "assets/templates/ambiance/screen-2.jpg",
+              "label": "启用某个模式",
+              "editableAreas": [
+                { "label": "模式名称", "x": 5, "y": 8, "w": 30, "h": 6 },
+                { "label": "模式选择网格", "x": 10, "y": 25, "w": 80, "h": 55 }
+              ]
+            },
+            {
+              "file": "assets/templates/ambiance/screen-3.jpg",
+              "label": "唤起播放列表",
+              "editableAreas": [
+                { "label": "播放列表标题", "x": 10, "y": 15, "w": 40, "h": 6 },
+                { "label": "曲目列表", "x": 10, "y": 24, "w": 80, "h": 55 }
+              ]
+            },
+            {
+              "file": "assets/templates/ambiance/screen-4.jpg",
+              "label": "播放视频",
+              "editableAreas": [
+                { "label": "视频播放画面", "x": 10, "y": 10, "w": 80, "h": 65 },
+                { "label": "视频控制栏", "x": 10, "y": 78, "w": 80, "h": 8 }
+              ]
+            },
+            {
+              "file": "assets/templates/ambiance/screen-5.jpg",
+              "label": "视频播放列表",
+              "editableAreas": [
+                { "label": "视频缩略图网格", "x": 10, "y": 15, "w": 80, "h": 55 },
+                { "label": "列表标题", "x": 10, "y": 8, "w": 40, "h": 5 }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "影音娱乐",
+          "screenshots": [
+            {
+              "file": "assets/templates/media/screen-1.jpg",
+              "label": "看电视",
+              "editableAreas": [
+                { "label": "频道名称/台标", "x": 5, "y": 5, "w": 20, "h": 6 },
+                { "label": "电视播放画面", "x": 5, "y": 14, "w": 90, "h": 65 },
+                { "label": "频道列表/节目单", "x": 5, "y": 82, "w": 90, "h": 8 }
+              ]
+            },
+            {
+              "file": "assets/templates/media/screen-2.jpg",
+              "label": "点播（第三方软件）",
+              "editableAreas": [
+                { "label": "影视海报/推荐区", "x": 10, "y": 12, "w": 80, "h": 65 },
+                { "label": "分类导航", "x": 5, "y": 5, "w": 50, "h": 6 }
+              ]
+            },
+            {
+              "file": "assets/templates/media/screen-3.jpg",
+              "label": "点播（标准极光TV）",
+              "editableAreas": [
+                { "label": "影视内容区", "x": 10, "y": 12, "w": 80, "h": 65 },
+                { "label": "顶部导航栏", "x": 5, "y": 3, "w": 90, "h": 8 }
+              ]
+            },
+            {
+              "file": "assets/templates/media/screen-4.jpg",
+              "label": "投屏主界面",
+              "editableAreas": [
+                { "label": "投屏引导图", "x": 10, "y": 15, "w": 80, "h": 45 },
+                { "label": "投屏说明文字", "x": 15, "y": 65, "w": 70, "h": 15 }
+              ]
+            },
+            {
+              "file": "assets/templates/media/screen-5.jpg",
+              "label": "投屏-设备选中",
+              "editableAreas": [
+                { "label": "设备列表", "x": 20, "y": 25, "w": 60, "h": 40 },
+                { "label": "当前选中设备", "x": 25, "y": 30, "w": 50, "h": 10 },
+                { "label": "连接按钮", "x": 40, "y": 72, "w": 20, "h": 8 }
+              ]
+            },
+            {
+              "file": "assets/templates/media/screen-6.jpg",
+              "label": "投屏-检查网络",
+              "editableAreas": [
+                { "label": "网络状态图标", "x": 40, "y": 30, "w": 20, "h": 20 },
+                { "label": "状态提示文字", "x": 25, "y": 55, "w": 50, "h": 10 }
+              ]
+            },
+            {
+              "file": "assets/templates/media/screen-7.jpg",
+              "label": "投屏-连接成功",
+              "editableAreas": [
+                { "label": "成功图标", "x": 40, "y": 30, "w": 20, "h": 20 },
+                { "label": "成功提示文字", "x": 25, "y": 55, "w": 50, "h": 10 },
+                { "label": "设备名称", "x": 30, "y": 45, "w": 40, "h": 8 }
+              ]
+            }
+          ]
+        }
+      ],
+      "downloadMaterials": []
+    }
+  ]
+}
