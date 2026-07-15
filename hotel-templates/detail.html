@@ -183,7 +183,7 @@ let sectionsData = [];
 async function loadTemplate() {
   if (!templateId) { showEmpty('缺少模板 ID 参数'); return; }
   try {
-    const res = await fetch('data/templates.json');
+    const res = await fetch('data/templates.json?v=' + Date.now());
     const data = await res.json();
     template = data.templates.find(t => t.id === templateId);
     if (!template) { showEmpty('未找到该模板'); return; }
@@ -313,11 +313,14 @@ function renderAnnotations(areas) {
   layer.className = 'annotation-layer' + (show ? ' visible' : '');
 
   if (!areas.length) { layer.innerHTML = ''; return; }
-  layer.innerHTML = areas.map(a => `
+  layer.innerHTML = areas.map(a => {
+    const pw = Math.round(a.w * 1920 / 100);
+    const ph = Math.round(a.h * 1080 / 100);
+    return `
     <div class="annotation-box" style="left:${a.x}%;top:${a.y}%;width:${a.w}%;height:${a.h}%;">
-      <span class="annotation-label">${a.label}</span>
-    </div>
-  `).join('');
+      <span class="annotation-label">${a.label} ${pw}×${ph}px</span>
+    </div>`;
+  }).join('');
 }
 
 document.getElementById('showAnnotations').addEventListener('change', function() {

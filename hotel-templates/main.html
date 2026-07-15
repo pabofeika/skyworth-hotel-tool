@@ -435,7 +435,7 @@ let currentTemplate = null;
 
 async function loadTemplates() {
   try {
-    const res = await fetch('data/templates.json');
+    const res = await fetch('data/templates.json?v=' + Date.now());
     templatesData = (await res.json()).templates || [];
   } catch (err) {
     console.error('加载模板数据失败:', err);
@@ -618,11 +618,14 @@ function renderAnnotations(layer, areas) {
     layer.innerHTML = '';
     return;
   }
-  layer.innerHTML = areas.map(a => `
+  layer.innerHTML = areas.map(a => {
+    const pw = Math.round(a.w * 1920 / 100);
+    const ph = Math.round(a.h * 1080 / 100);
+    return `
     <div class="annotation-box" style="left:${a.x}%;top:${a.y}%;width:${a.w}%;height:${a.h}%;">
-      <span class="annotation-label">${a.label}</span>
-    </div>
-  `).join('');
+      <span class="annotation-label">${a.label} ${pw}×${ph}px</span>
+    </div>`;
+  }).join('');
 }
 
 function closeOverlay() {

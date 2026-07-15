@@ -580,7 +580,7 @@ class HotelWorkflowExecutor {
 	                onOrOff: 1, child_type: 1, desc: '设置欢迎词', container_infos: [],
 	                expand_info: { sup_types: [4,0], max_elem: '3', en_title: 'welcome text', ext_s: [] } },
 	              { type: 2, name: 'WELCOME_VOICE_BROADCAST', title: '语音播报', push_mode: 0, onOrOff: 1,
-	                component_infos: [{ type: 4, value: `欢迎下榻${hotelName}，我是您的AI客房管家小维。\n无论是调节空调温度、点亮温馨灯光，还是轻启窗帘迎接晨光，您只需轻声唤我："小维小维，打开空调"或"小维小维，打开灯光"，祝您入住愉快！` }],
+	                component_infos: [{ type: 4, value: `欢迎下榻${hotelName}` }],
 	                child_type: 1, desc: '语音播报', container_infos: [],
 	                expand_info: { sup_types: [4], ext_s: [], max_elem: 1 } },
 	            ] },

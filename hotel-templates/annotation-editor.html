@@ -137,7 +137,7 @@ const mainImg = document.getElementById('mainImg');
 // ============ 加载数据 ============
 async function init() {
   try {
-    const res = await fetch('data/templates.json');
+    const res = await fetch('data/templates.json?v=' + Date.now());
     templates = (await res.json()).templates || [];
     if (templates.length === 0) { showMsg('暂无模板数据', 'err'); return; }
     renderTemplateSelect();
@@ -450,9 +450,12 @@ document.getElementById('btnExport').addEventListener('click', () => {
   const screen = section.screenshots?.[currentScreenIdx];
   const name = typeof screen === 'string' ? '截图' : (screen.label || '截图');
   const code = JSON.stringify(areas.map(a => {
+    const pw = Math.round(a.w * 1920 / 100);
+    const ph = Math.round(a.h * 1080 / 100);
     const item = {
       label: a.label, x: Math.round(a.x*10)/10, y: Math.round(a.y*10)/10,
-      w: Math.round(a.w*10)/10, h: Math.round(a.h*10)/10
+      w: Math.round(a.w*10)/10, h: Math.round(a.h*10)/10,
+      px: `${pw}×${ph}px`
     };
     if (a.desc && a.desc.trim()) item.desc = a.desc.trim();
     return item;
@@ -471,9 +474,12 @@ document.getElementById('btnExportAll').addEventListener('click', () => {
       label: typeof s === 'string' ? '截图' : (s.label || '截图'),
       file: typeof s === 'string' ? s : s.file,
       editableAreas: (typeof s === 'string' ? [] : (s.editableAreas || [])).map(a => {
+        const pw = Math.round(a.w * 1920 / 100);
+        const ph = Math.round(a.h * 1080 / 100);
         const item = {
           label: a.label, x: Math.round(a.x*10)/10, y: Math.round(a.y*10)/10,
-          w: Math.round(a.w*10)/10, h: Math.round(a.h*10)/10
+          w: Math.round(a.w*10)/10, h: Math.round(a.h*10)/10,
+          px: `${pw}×${ph}px`
         };
         if (a.desc && a.desc.trim()) item.desc = a.desc.trim();
         return item;
